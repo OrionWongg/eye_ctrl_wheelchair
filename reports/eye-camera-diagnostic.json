@@ -1,0 +1,682 @@
+{
+  "binding": {
+    "cameras": [
+      "/dev/video4",
+      "/dev/video2"
+    ],
+    "usb_paths": [
+      "/sys/devices/pci0000:00/0000:00:08.1/0000:05:00.4/usb3/3-2/3-2.1/3-2.1:1.0",
+      "/sys/devices/pci0000:00/0000:00:08.1/0000:05:00.4/usb3/3-2/3-2.2/3-2.2:1.0"
+    ],
+    "rotations": [
+      180,
+      0
+    ],
+    "model_sha256": "3648e6aed9db8e72702b43d88ef240e0eb048b0afc19247a2099c140be9dfbec",
+    "purest_sha256": "c06eed17aedeebb2cc23c850f2de7781e31c569269c43a0b04613265c54dfe5e",
+    "algorithm": "full-frame-onnx-purest-reconstruction-v1"
+  },
+  "seconds": 3.775479163,
+  "frames": [
+    {
+      "sequence": 1,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 121.52,
+      "features": [
+        [
+          0.4885569852941177,
+          null
+        ],
+        [
+          0.18360057248204928,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 2,
+      "states": [
+        "unknown",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 89.0,
+      "features": [
+        [
+          null,
+          null
+        ],
+        [
+          0.18081719763449064,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 3,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 91.99,
+      "features": [
+        [
+          0.14184027777777777,
+          null
+        ],
+        [
+          0.1857726490825688,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 4,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 100.21,
+      "features": [
+        [
+          0.5564903846153846,
+          null
+        ],
+        [
+          0.1775220538339742,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 5,
+      "states": [
+        "unknown",
+        "unknown"
+      ],
+      "fresh": true,
+      "age_ms": 100.55,
+      "features": [
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 6,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 84.06,
+      "features": [
+        [
+          0.5514705882352942,
+          null
+        ],
+        [
+          0.18617857748389283,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 7,
+      "states": [
+        "unknown",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 93.83,
+      "features": [
+        [
+          null,
+          null
+        ],
+        [
+          0.20225160256410257,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 8,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 94.48,
+      "features": [
+        [
+          0.143296853625171,
+          null
+        ],
+        [
+          0.1771325357364823,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 9,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 107.48,
+      "features": [
+        [
+          0.5356156367041198,
+          null
+        ],
+        [
+          0.19908829737335837,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 10,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 90.63,
+      "features": [
+        [
+          0.5195403981264637,
+          null
+        ],
+        [
+          0.1962671624713959,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 11,
+      "states": [
+        "unknown",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 93.29,
+      "features": [
+        [
+          null,
+          null
+        ],
+        [
+          0.19041689044038668,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 12,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 103.9,
+      "features": [
+        [
+          0.52173828125,
+          null
+        ],
+        [
+          0.20271970989761093,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 13,
+      "states": [
+        "unknown",
+        "unknown"
+      ],
+      "fresh": true,
+      "age_ms": 103.88,
+      "features": [
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 14,
+      "states": [
+        "open",
+        "unknown"
+      ],
+      "fresh": true,
+      "age_ms": 87.52,
+      "features": [
+        [
+          0.5281893325015596,
+          null
+        ],
+        [
+          null,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 15,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 100.43,
+      "features": [
+        [
+          0.5237582781456954,
+          null
+        ],
+        [
+          0.20197289156626508,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 16,
+      "states": [
+        "open",
+        "unknown"
+      ],
+      "fresh": true,
+      "age_ms": 108.18,
+      "features": [
+        [
+          0.5198829354669465,
+          null
+        ],
+        [
+          null,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 17,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 95.93,
+      "features": [
+        [
+          0.5186462580081537,
+          null
+        ],
+        [
+          0.19271155033971588,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 18,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 103.8,
+      "features": [
+        [
+          0.5160389957264957,
+          null
+        ],
+        [
+          0.1977771435819381,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 19,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 108.86,
+      "features": [
+        [
+          0.5180347326336832,
+          null
+        ],
+        [
+          0.1896522038567493,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 20,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 92.88,
+      "features": [
+        [
+          0.5240270650048876,
+          null
+        ],
+        [
+          0.17790962029355456,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 21,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 108.02,
+      "features": [
+        [
+          0.5189974802015839,
+          null
+        ],
+        [
+          0.19833178438661708,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 22,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 97.63,
+      "features": [
+        [
+          0.5182876842907982,
+          null
+        ],
+        [
+          0.18993546195652172,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 23,
+      "states": [
+        "unknown",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 100.72,
+      "features": [
+        [
+          null,
+          0.22663846015930175
+        ],
+        [
+          0.19264418377321604,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 24,
+      "states": [
+        "unknown",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 96.4,
+      "features": [
+        [
+          null,
+          0.2255260944366455
+        ],
+        [
+          0.2002467105263158,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 25,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 89.48,
+      "features": [
+        [
+          0.5291932785888078,
+          null
+        ],
+        [
+          0.17681403251599148,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 26,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 104.0,
+      "features": [
+        [
+          0.537061403508772,
+          null
+        ],
+        [
+          0.1877009338640539,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 27,
+      "states": [
+        "unknown",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 93.56,
+      "features": [
+        [
+          null,
+          null
+        ],
+        [
+          0.19202188940092166,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 28,
+      "states": [
+        "open",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 104.74,
+      "features": [
+        [
+          0.17192164179104477,
+          null
+        ],
+        [
+          0.19198078344419808,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 29,
+      "states": [
+        "unknown",
+        "open"
+      ],
+      "fresh": true,
+      "age_ms": 99.49,
+      "features": [
+        [
+          null,
+          null
+        ],
+        [
+          0.19695375335120643,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    },
+    {
+      "sequence": 30,
+      "states": [
+        "open",
+        "unknown"
+      ],
+      "fresh": true,
+      "age_ms": 91.28,
+      "features": [
+        [
+          0.5367584745762712,
+          null
+        ],
+        [
+          null,
+          null
+        ]
+      ],
+      "horizontal": 0.0,
+      "motion_valid": false,
+      "blink_event": null
+    }
+  ]
+}

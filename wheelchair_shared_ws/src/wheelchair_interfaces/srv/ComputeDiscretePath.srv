@@ -1,0 +1,21 @@
+std_msgs/Header header
+string task_id
+uint64 request_id
+geometry_msgs/Pose2D start
+geometry_msgs/Pose2D[] goals
+float64 max_path_length
+# Corridor centerline in header.frame_id, independent of robot orientation.
+geometry_msgs/Pose2D corridor_origin
+float64 corridor_half_width
+# False preserves the requested straight/rotate waypoint route (locked entries).
+bool allow_detour
+---
+std_msgs/Header header
+string task_id
+uint64 request_id
+bool success
+nav_msgs/Path path
+string reason
+uint32 expansions
+float64 compute_ms
+builtin_interfaces/Time costmap_stamp

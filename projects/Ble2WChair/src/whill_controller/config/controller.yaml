@@ -1,0 +1,13 @@
+whill_controller:
+  ros__parameters:
+    serial_port: "/dev/ttyACM0"
+    baud: 115200
+    control_mode: "free_screen"
+    whill_mode: false
+    hardware_enabled: true
+    forward_speed_mps: 0.37171350861287394
+    backward_speed_mps: 0.36421911421911424
+    left_turn_rate_radps: 0.3887880188826036
+    right_turn_rate_radps: 0.40325377156796044
+    odometry_requires_button_hold: true
+    path_max_points: 3000

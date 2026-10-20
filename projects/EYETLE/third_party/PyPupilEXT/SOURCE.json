@@ -1,0 +1,13 @@
+{
+  "source": "https://github.com/openPupil/PyPupilEXT",
+  "commit": "a2999de1dee62243e3be764312556be2e4986068",
+  "files": {
+    "PuReST.h": "60dae78f8da5ce2ea422911ea668d2fd3f56b374102eaebed89ce8dc1342728f",
+    "PupilDetectionMethod.cpp": "2643378f5c7981ee5e2e7af86b1c4f5ec9be13731fe574c8f040d0b3a09392dc",
+    "PuReST.cpp": "e3c43a7c4697dbbb365ceb942c8a489ef189236817dba0cdb084e3fa618f6cd0",
+    "Pupil.h": "ff61940956b13903dc3233341efe9424d18481f5eede129c6ed60406dce0e214",
+    "PuRe.h": "9bc1df1eec3434d7fd63cf7c1ce5e3eabc7428ef768f0763b1a7281ec84e8105",
+    "PupilDetectionMethod.h": "a59f5af746ec14f0b8624736ac0fff8db48007314d31045438b037f97cc2d8c4",
+    "PuRe.cpp": "723a77e805c6ae16a007f549ec1cc022c5a1629159e8a2671df2294b17cbbf29"
+  }
+}

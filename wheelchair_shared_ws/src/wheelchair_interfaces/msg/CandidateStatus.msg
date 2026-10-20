@@ -1,0 +1,17 @@
+uint8 CONTINUE=1
+uint8 ADJUST_HEADING=2
+uint8 CANCEL=3
+std_msgs/Header header
+uint16 protocol_version
+string source_session_id
+uint64 sequence
+string candidate_id
+uint64 candidate_version
+uint8 kind
+float64 relative_yaw
+bool stable
+bool confirmable
+uint32 ttl_ms
+string context_id
+uint64 context_version
+string hint

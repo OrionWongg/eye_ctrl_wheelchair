@@ -1,0 +1,10 @@
+uint8 ACCEPTED=1
+uint8 REJECTED=2
+std_msgs/Header header
+uint16 protocol_version
+string manager_session_id
+string source_session_id
+uint64 event_id
+uint8 status
+string task_id
+string reason

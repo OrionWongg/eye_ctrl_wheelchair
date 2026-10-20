@@ -1,0 +1,91 @@
+{
+  "schema_version": 2,
+  "origin": "bottom-right screen boundary",
+  "coordinate_origin": "steering wheel center",
+  "coordinate_convention": "+x is right, -x is left, +y is down, -y is up",
+  "point_count": 9,
+  "points": [
+    {
+      "index": 1,
+      "name": "steering wheel center",
+      "origin": "bottom-right screen boundary",
+      "sequence": "aaaaaaaaaaaaaaaaaaaaaaaaawwwwwwwwwwwwww",
+      "offset": {"x": 0, "y": 0},
+      "counts": {"a": 25, "w": 14},
+      "total_count": 39,
+      "description": "Deterministic APP origin after bottom-right saturation"
+    },
+    {
+      "index": 2,
+      "name": "forward",
+      "origin": "steering wheel center",
+      "sequence": "wwwwwwd",
+      "offset": {"x": 1, "y": -6},
+      "counts": {"d": 1, "w": 6},
+      "total_count": 7
+    },
+    {
+      "index": 3,
+      "name": "right-forward",
+      "origin": "steering wheel center",
+      "sequence": "wwwwdddd",
+      "offset": {"x": 4, "y": -4},
+      "counts": {"d": 4, "w": 4},
+      "total_count": 8
+    },
+    {
+      "index": 4,
+      "name": "right",
+      "origin": "steering wheel center",
+      "sequence": "dddddd",
+      "offset": {"x": 6, "y": 0},
+      "counts": {"d": 6},
+      "total_count": 6
+    },
+    {
+      "index": 5,
+      "name": "right-backward",
+      "origin": "steering wheel center",
+      "sequence": "dddddssss",
+      "offset": {"x": 5, "y": 4},
+      "counts": {"d": 5, "s": 4},
+      "total_count": 9
+    },
+    {
+      "index": 6,
+      "name": "backward",
+      "origin": "steering wheel center",
+      "sequence": "ssssss",
+      "offset": {"x": 0, "y": 6},
+      "counts": {"s": 6},
+      "total_count": 6
+    },
+    {
+      "index": 7,
+      "name": "left-backward",
+      "origin": "steering wheel center",
+      "sequence": "aaaassss",
+      "offset": {"x": -4, "y": 4},
+      "counts": {"a": 4, "s": 4},
+      "total_count": 8
+    },
+    {
+      "index": 8,
+      "name": "left",
+      "origin": "steering wheel center",
+      "sequence": "aaaaa",
+      "offset": {"x": -5, "y": 0},
+      "counts": {"a": 5},
+      "total_count": 5
+    },
+    {
+      "index": 9,
+      "name": "left-forward",
+      "origin": "steering wheel center",
+      "sequence": "wwwwwaaaa",
+      "offset": {"x": -4, "y": -5},
+      "counts": {"a": 4, "w": 5},
+      "total_count": 9
+    }
+  ]
+}

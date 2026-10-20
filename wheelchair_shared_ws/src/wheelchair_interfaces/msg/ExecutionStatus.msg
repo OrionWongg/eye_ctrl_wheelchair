@@ -1,0 +1,14 @@
+uint8 STOPPED=0
+uint8 RUNNING=1
+uint8 STOPPING=2
+uint8 STARTING=3
+uint8 FAULT=4
+std_msgs/Header header
+string session_id
+uint64 sequence
+string action_session_id
+uint64 action_sequence
+uint8 executed_action
+uint8 state
+bool stopped
+string reason
