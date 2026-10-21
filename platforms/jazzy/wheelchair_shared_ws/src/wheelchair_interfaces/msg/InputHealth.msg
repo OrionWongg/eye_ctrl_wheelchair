@@ -1,9 +1,0 @@
-std_msgs/Header header
-uint16 protocol_version
-string source_session_id
-uint64 sequence
-bool source_valid
-float64 source_age_ms
-uint64 sample_sequence
-bool reception_timed
-uint32 ttl_ms

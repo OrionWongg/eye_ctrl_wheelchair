@@ -2,7 +2,6 @@
 
 统一管理眼动识别、轮椅共享控制与仿真、BLE 底盘接口的 ROS 2 项目。主要开发环境为 **Ubuntu 22.04 / ROS 2 Humble / Jetson Orin（aarch64）/ Gazebo Fortress**。
 
-远程原有 Ubuntu 24.04 / ROS 2 Jazzy / Gazebo Harmonic 版本完整保存在 [platforms/jazzy](platforms/jazzy/README.md)，该版本使用独立的直接仿真驾驶链路。Jazzy 用户请进入该目录按原说明安装和启动，避免混用两套 ROS 环境。
 
 ## 项目结构
 
