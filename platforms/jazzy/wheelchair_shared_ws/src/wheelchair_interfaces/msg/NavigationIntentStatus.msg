@@ -1,0 +1,15 @@
+std_msgs/Header header
+string manager_session_id
+string source_session_id
+uint64 sequence
+uint64 event_id
+string task_id
+string phase
+int8 preference
+string entry_id
+float64 remaining_time
+float64 remaining_distance
+geometry_msgs/Pose2D local_goal
+uint8 executed_action
+bool can_start
+string reason

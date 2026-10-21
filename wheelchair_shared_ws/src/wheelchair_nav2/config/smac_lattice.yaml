@@ -1,0 +1,27 @@
+/**:
+  ros__parameters:
+    use_sim_time: true
+    search_time_limit: 0.35
+    costmap_timeout: 0.5
+    # Search-only reserve for grid/heading sampling; final continuous check
+    # and the existing safety gate retain their original hard margin.
+    smac_search_sampling_margin: 0.05
+    Lattice:
+      tolerance: 0.0
+      allow_unknown: false
+      allow_reverse_expansion: false
+      smooth_path: false
+      max_iterations: 50000
+      max_on_approach_iterations: 1000
+      max_planning_time: 0.25
+      lookup_table_size: 3.0
+      cache_obstacle_heuristic: false
+      rotation_penalty: 1.0
+      reverse_penalty: 2.0
+      change_penalty: 0.0
+      non_straight_penalty: 1.0
+      cost_penalty: 2.0
+      retrospective_penalty: 0.0
+      analytic_expansion_ratio: 3.5
+      # Disable continuous Dubins shortcuts: the actuator has no arc action.
+      analytic_expansion_max_length: 0.0

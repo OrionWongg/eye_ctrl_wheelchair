@@ -1,0 +1,11 @@
+{
+  "teyed.keras": {
+    "url": "https://raw.githubusercontent.com/jtlicardo/teyed-gaze-regression/8eb56771e248ab5ef5f649481afd8d5f588b3d02/trained_models/best_overall.keras",
+    "sha256": "7addeab873871bc9c65b3502e568cc3b65aab49cc4b3c92657927d0c89ba3b16",
+    "repository_revision": "8eb56771e248ab5ef5f649481afd8d5f588b3d02"
+  },
+  "meye.h5": {
+    "url": "https://github.com/fabiocarrara/meye/releases/download/v0.1.1/meye-2022-01-24.h5",
+    "sha256": "b6ea8c48dcee44ec4e162ce7df5056d50fc8380c922a64a9fda0e5fdd283a150"
+  }
+}

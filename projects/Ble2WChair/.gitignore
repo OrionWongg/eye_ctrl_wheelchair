@@ -1,0 +1,11 @@
+build/
+install/
+log/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+/calibration_logs/
+
+# Local offline validation outputs
+offline-results/
+video-results/

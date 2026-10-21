@@ -1,0 +1,28 @@
+/**:
+  ros__parameters:
+    intent_search_distance: 3.0
+    intent_search_timeout: 8.0
+    entry_lookahead: 3.0
+    open_area_heading_bias: 0.3490658503988659
+    maneuver_timeout: 20.0
+    progress_timeout: 3.0
+    nav_position_tolerance: 0.06
+    entry_exit_clearance: 0.20
+    entry_scan_period: 0.25
+    # Extra bounded turn authority; endpoint tolerance remains 2 degrees.
+    nav_turn_envelope: 0.17453292519943295
+    path_lookahead: 2.0
+    # Continue the authorized heading across corridor exits; collision and
+    # full-speed braking checks still apply. Use 'stop' for branch confirmation.
+    nav_corridor_end_behavior: continue_straight
+    path_replan_distance: 0.55
+    path_timeout: 1.0
+    costmap_timeout: 0.5
+    uturn_timeout: 35.0
+    context_assist_enter: 0.45
+    context_assist_leave: 0.65
+    context_stable_time: 0.5
+    # Only after a stationary turn is geometrically blocked.
+    turn_adjust_distance: 0.60
+    turn_adjust_attempts: 3
+    turn_adjust_timeout: 20.0

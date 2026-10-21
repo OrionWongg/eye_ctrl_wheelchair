@@ -1,0 +1,5 @@
+<library path="fixed_action_generator">
+  <class name="wheelchair_nav2::FixedActionGenerator" type="wheelchair_nav2::FixedActionGenerator" base_class_type="dwb_core::TrajectoryGenerator">
+    <description>Only STOP, forward, left pivot and right pivot; acceleration, stop and startup are explicit.</description>
+  </class>
+</library>

@@ -1,0 +1,251 @@
+{
+  "date": "2026-10-10",
+  "power_mode": "MAXN",
+  "records": {
+    "live-both": {
+      "frames": 240,
+      "devices": [
+        "/dev/v4l/by-path/platform-3610000.usb-usb-0:4.4.1:1.0-video-index0",
+        "/dev/v4l/by-path/platform-3610000.usb-usb-0:4.4.2:1.0-video-index0"
+      ],
+      "open_frames": [
+        236,
+        230
+      ],
+      "state_frames": [
+        {
+          "open": 236,
+          "closed": 4,
+          "unknown": 0
+        },
+        {
+          "open": 233,
+          "closed": 3,
+          "unknown": 4
+        }
+      ],
+      "elapsed_seconds": 8.544201399025042,
+      "camera_pipeline_fps": 28.08922552169543,
+      "inference_ms_p50": 10.672857002646197,
+      "inference_ms_p95": 14.995910927245856,
+      "processing_ms_p95": 42.16553955484414,
+      "frame_age_after_processing_ms_p95": 62.347331871569594,
+      "note": "Frame age excludes exposure/USB latency. Batch inference time is amortized per eye. Open detections are not accuracy ground truth."
+    },
+    "live-both-gui": {
+      "frames": 150,
+      "preview_frames": 76,
+      "devices": [
+        "/dev/v4l/by-path/platform-3610000.usb-usb-0:4.4.1:1.0-video-index0",
+        "/dev/v4l/by-path/platform-3610000.usb-usb-0:4.4.2:1.0-video-index0"
+      ],
+      "open_frames": [
+        145,
+        139
+      ],
+      "state_frames": [
+        {
+          "open": 145,
+          "closed": 5,
+          "unknown": 0
+        },
+        {
+          "open": 140,
+          "closed": 10,
+          "unknown": 0
+        }
+      ],
+      "elapsed_seconds": 6.860593868012074,
+      "camera_pipeline_fps": 21.863996453628292,
+      "inference_ms_p50": 11.332525740726851,
+      "inference_ms_p95": 16.16955349163618,
+      "processing_ms_p95": 55.213950393954285,
+      "frame_age_after_processing_ms_p95": 73.20184597192565,
+      "note": "Frame age excludes exposure/USB latency. Batch inference time is amortized per eye. Open detections are not accuracy ground truth."
+    },
+    "parity-fast": {
+      "label_agreement": 0.9997265625,
+      "confidence_mae": 0.00025567554985173047,
+      "cpu_metrics": {
+        "pupil": [
+          [
+            329.2361145019531,
+            204.06077575683594
+          ],
+          [
+            43.73434829711914,
+            46.15007019042969
+          ],
+          171.3856658935547
+        ],
+        "confidence": 0.9952107071876526,
+        "eye_area": 31232,
+        "pupil_area": 1628,
+        "openness": 0.49656252845137816,
+        "eye_bbox": [
+          212,
+          158,
+          218,
+          133
+        ]
+      },
+      "trt_metrics": {
+        "pupil": [
+          [
+            329.2243957519531,
+            204.11033630371094
+          ],
+          [
+            43.68075180053711,
+            46.36734390258789
+          ],
+          172.5857696533203
+        ],
+        "confidence": 0.9948900938034058,
+        "eye_area": 31175,
+        "pupil_area": 1630,
+        "openness": 0.5029646106229659,
+        "eye_bbox": [
+          212,
+          158,
+          218,
+          133
+        ]
+      },
+      "note": "Numerical conversion check on one image, not ground-truth model accuracy."
+    },
+    "parity-crop": {
+      "label_agreement": 0.999453125,
+      "confidence_mae": 0.0004485831595957279,
+      "cpu_metrics": {
+        "pupil": [
+          [
+            169.7926025390625,
+            84.02193450927734
+          ],
+          [
+            40.4347038269043,
+            46.402130126953125
+          ],
+          10.493090629577637
+        ],
+        "confidence": 0.9936761260032654,
+        "eye_area": 10572,
+        "pupil_area": 1488,
+        "openness": 0.5129579217554755,
+        "eye_bbox": [
+          109,
+          64,
+          161,
+          133
+        ]
+      },
+      "trt_metrics": {
+        "pupil": [
+          [
+            169.77230834960938,
+            83.99136352539062
+          ],
+          [
+            40.47954559326172,
+            46.432987213134766
+          ],
+          10.013916015625
+        ],
+        "confidence": 0.9936516880989075,
+        "eye_area": 10596,
+        "pupil_area": 1487,
+        "openness": 0.5127711337175299,
+        "eye_bbox": [
+          109,
+          64,
+          161,
+          133
+        ]
+      },
+      "note": "Numerical conversion check on one image, not ground-truth model accuracy."
+    },
+    "parity-batch": {
+      "label_agreement": 0.99953125,
+      "confidence_mae": 0.0003717503568623215,
+      "cpu_metrics": {
+        "pupil": [
+          [
+            169.7926025390625,
+            84.02193450927734
+          ],
+          [
+            40.4347038269043,
+            46.402130126953125
+          ],
+          10.493090629577637
+        ],
+        "confidence": 0.9936761260032654,
+        "eye_area": 10572,
+        "pupil_area": 1488,
+        "openness": 0.5129579217554755,
+        "eye_bbox": [
+          109,
+          64,
+          161,
+          133
+        ]
+      },
+      "trt_metrics": {
+        "pupil": [
+          [
+            169.81655883789062,
+            83.9850082397461
+          ],
+          [
+            40.32133483886719,
+            46.52290725708008
+          ],
+          9.85423469543457
+        ],
+        "confidence": 0.9939152002334595,
+        "eye_area": 10590,
+        "pupil_area": 1486,
+        "openness": 0.517995731257729,
+        "eye_bbox": [
+          109,
+          64,
+          161,
+          133
+        ]
+      },
+      "note": "Numerical conversion check on one image, not ground-truth model accuracy."
+    },
+    "ros-check": {
+      "received": 10,
+      "uncalibrated_all_invalid": true
+    },
+    "live-left": {
+      "frames": 90,
+      "preview_frames": 0,
+      "devices": [
+        "/dev/v4l/by-path/platform-3610000.usb-usb-0:4.4.1:1.0-video-index0"
+      ],
+      "open_frames": [
+        86
+      ],
+      "state_frames": [
+        {
+          "open": 86,
+          "closed": 4,
+          "unknown": 0
+        }
+      ],
+      "elapsed_seconds": 3.1288888969866093,
+      "camera_pipeline_fps": 28.76420447101135,
+      "inference_ms_p50": 16.96603500749916,
+      "inference_ms_p95": 28.128051293606397,
+      "processing_ms_p95": 35.53311575378757,
+      "frame_age_after_processing_ms_p95": 39.19298386317678,
+      "note": "Frame age excludes exposure/USB latency. Batch inference time is amortized per eye. Open detections are not accuracy ground truth."
+    }
+  },
+  "unit_tests_passed": 16,
+  "accuracy_ground_truth_evaluation": "not performed",
+  "launcher_smoke_passed": true
+}

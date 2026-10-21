@@ -1,0 +1,1470 @@
+[
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_NARROW_PASSAGE_IMPLEMENTATION.md",
+    "destination": "projects/WHEELCHAIR_NARROW_PASSAGE_IMPLEMENTATION.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_SHARED_CONTROL_WORK_SUMMARY.md",
+    "destination": "projects/WHEELCHAIR_SHARED_CONTROL_WORK_SUMMARY.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_REMOVE_ROUTE_PREFLIGHT.md",
+    "destination": "projects/WHEELCHAIR_REMOVE_ROUTE_PREFLIGHT.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_OFFICE_JUNCTION_STOP_FIX.md",
+    "destination": "projects/WHEELCHAIR_OFFICE_JUNCTION_STOP_FIX.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_DIRECTIONAL_INTENT_KEYBOARD_FIRST_PLAN.md",
+    "destination": "projects/WHEELCHAIR_DIRECTIONAL_INTENT_KEYBOARD_FIRST_PLAN.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_SMAC_STATE_LATTICE_HUMBLE_SUMMARY.md",
+    "destination": "projects/WHEELCHAIR_SMAC_STATE_LATTICE_HUMBLE_SUMMARY.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_TURN_VISIBILITY_FIX.md",
+    "destination": "projects/WHEELCHAIR_TURN_VISIBILITY_FIX.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_AUTOMATIC_RECOVERY_FIX.md",
+    "destination": "projects/WHEELCHAIR_AUTOMATIC_RECOVERY_FIX.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_ALGORITHM_OVERVIEW.md",
+    "destination": "projects/WHEELCHAIR_ALGORITHM_OVERVIEW.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_INTENT_SHARED_CONTROL_IMPLEMENTATION_PLAN.md",
+    "destination": "projects/WHEELCHAIR_INTENT_SHARED_CONTROL_IMPLEMENTATION_PLAN.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_NARROW_PASSAGE_IMPROVEMENT_PLAN.md",
+    "destination": "projects/WHEELCHAIR_NARROW_PASSAGE_IMPROVEMENT_PLAN.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_PROJECT_SUMMARY_AND_INTERFACES.md",
+    "destination": "projects/WHEELCHAIR_PROJECT_SUMMARY_AND_INTERFACES.md"
+  },
+  {
+    "source": "/home/whill/projects/EYE_WHEELCHAIR_SHARED_CONTROL.md",
+    "destination": "projects/EYE_WHEELCHAIR_SHARED_CONTROL.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_NAV2_DISCRETE_PATH_CONTROL_IMPLEMENTATION.md",
+    "destination": "projects/WHEELCHAIR_NAV2_DISCRETE_PATH_CONTROL_IMPLEMENTATION.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_HALL_TURN_FIX.md",
+    "destination": "projects/WHEELCHAIR_HALL_TURN_FIX.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_MONOCULAR_EYE_INTERFACE_UPDATE.md",
+    "destination": "projects/WHEELCHAIR_MONOCULAR_EYE_INTERFACE_UPDATE.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_INTENT_SHARED_CONTROL_IMPLEMENTATION.md",
+    "destination": "projects/WHEELCHAIR_INTENT_SHARED_CONTROL_IMPLEMENTATION.md"
+  },
+  {
+    "source": "/home/whill/projects/EYE_WHEELCHAIR_INTEGRATION_SUMMARY_20261019.md",
+    "destination": "projects/EYE_WHEELCHAIR_INTEGRATION_SUMMARY_20261019.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_OFFICE_JUNCTION_STOP_DIAGNOSIS.md",
+    "destination": "projects/WHEELCHAIR_OFFICE_JUNCTION_STOP_DIAGNOSIS.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_BINOCULAR_EYE_NAVIGATION_SUMMARY.md",
+    "destination": "projects/WHEELCHAIR_BINOCULAR_EYE_NAVIGATION_SUMMARY.md"
+  },
+  {
+    "source": "/home/whill/projects/WHEELCHAIR_OBSTACLE_AVOIDANCE_OVERVIEW.md",
+    "destination": "projects/WHEELCHAIR_OBSTACLE_AVOIDANCE_OVERVIEW.md"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/start_eye_wheelchair.sh",
+    "destination": "projects/EYETLE/start_eye_wheelchair.sh"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/requirements-teyed-export.txt",
+    "destination": "projects/EYETLE/requirements-teyed-export.txt"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/start_eye_turtle.sh",
+    "destination": "projects/EYETLE/start_eye_turtle.sh"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/eye_ros_env.bash",
+    "destination": "projects/EYETLE/eye_ros_env.bash"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/requirements-gaze3d.txt",
+    "destination": "projects/EYETLE/requirements-gaze3d.txt"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/GAZE3D.md",
+    "destination": "projects/EYETLE/GAZE3D.md"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/ITOH.md",
+    "destination": "projects/EYETLE/ITOH.md"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/start_fusion.sh",
+    "destination": "projects/EYETLE/start_fusion.sh"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/CURRENT_EYE_CONTROL_SUMMARY.md",
+    "destination": "projects/EYETLE/CURRENT_EYE_CONTROL_SUMMARY.md"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/ALGORITHM_OPTIONS_2026-10-16.md",
+    "destination": "projects/EYETLE/ALGORITHM_OPTIONS_2026-10-16.md"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/requirements-orin-lock.txt",
+    "destination": "projects/EYETLE/requirements-orin-lock.txt"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/FUSION.md",
+    "destination": "projects/EYETLE/FUSION.md"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/RITNET.md",
+    "destination": "projects/EYETLE/RITNET.md"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/README.md",
+    "destination": "projects/EYETLE/README.md"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/.gitignore",
+    "destination": "projects/EYETLE/.gitignore"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/OFFLINE.md",
+    "destination": "projects/EYETLE/OFFLINE.md"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/start_dual_eye.sh",
+    "destination": "projects/EYETLE/start_dual_eye.sh"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/requirements-eye-tracking.txt",
+    "destination": "projects/EYETLE/requirements-eye-tracking.txt"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/start_itoh.sh",
+    "destination": "projects/EYETLE/start_itoh.sh"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/start_ritnet.sh",
+    "destination": "projects/EYETLE/start_ritnet.sh"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/TEYED.md",
+    "destination": "projects/EYETLE/TEYED.md"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/DUAL_CAMERA.md",
+    "destination": "projects/EYETLE/DUAL_CAMERA.md"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/start_left_eye.sh",
+    "destination": "projects/EYETLE/start_left_eye.sh"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/PROJECT_SUMMARY.md",
+    "destination": "projects/EYETLE/PROJECT_SUMMARY.md"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/start_teyed.sh",
+    "destination": "projects/EYETLE/start_teyed.sh"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/purest_backend.py",
+    "destination": "projects/EYETLE/tools/purest_backend.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/fusion_guide.py",
+    "destination": "projects/EYETLE/tools/fusion_guide.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/ritnet_backend.py",
+    "destination": "projects/EYETLE/tools/ritnet_backend.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/dual_eye_tracker.py",
+    "destination": "projects/EYETLE/tools/dual_eye_tracker.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/build_ritnet.sh",
+    "destination": "projects/EYETLE/tools/build_ritnet.sh"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/smoke_pipeline.py",
+    "destination": "projects/EYETLE/tools/smoke_pipeline.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/export_teyed.py",
+    "destination": "projects/EYETLE/tools/export_teyed.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/ritnet_blink.py",
+    "destination": "projects/EYETLE/tools/ritnet_blink.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/intent_feedback.py",
+    "destination": "projects/EYETLE/tools/intent_feedback.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/ritnet_tracker.py",
+    "destination": "projects/EYETLE/tools/ritnet_tracker.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/make_offline_video.py",
+    "destination": "projects/EYETLE/tools/make_offline_video.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/fusion_tracker.py",
+    "destination": "projects/EYETLE/tools/fusion_tracker.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/check_ros_topics.sh",
+    "destination": "projects/EYETLE/tools/check_ros_topics.sh"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/smoke_video_pipeline.py",
+    "destination": "projects/EYETLE/tools/smoke_video_pipeline.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/replay_signals.py",
+    "destination": "projects/EYETLE/tools/replay_signals.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/build_teyed.sh",
+    "destination": "projects/EYETLE/tools/build_teyed.sh"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/export_ritnet.py",
+    "destination": "projects/EYETLE/tools/export_ritnet.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/validate_ritnet.py",
+    "destination": "projects/EYETLE/tools/validate_ritnet.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/fusion_control.py",
+    "destination": "projects/EYETLE/tools/fusion_control.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/teyed_backend.py",
+    "destination": "projects/EYETLE/tools/teyed_backend.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/fusion_calibration.py",
+    "destination": "projects/EYETLE/tools/fusion_calibration.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/teyed_tracker.py",
+    "destination": "projects/EYETLE/tools/teyed_tracker.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/gaze_calibration.py",
+    "destination": "projects/EYETLE/tools/gaze_calibration.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/benchmark_ritnet.py",
+    "destination": "projects/EYETLE/tools/benchmark_ritnet.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/itoh_backend.py",
+    "destination": "projects/EYETLE/tools/itoh_backend.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/build_itoh.sh",
+    "destination": "projects/EYETLE/tools/build_itoh.sh"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/eye_tracking_test.py",
+    "destination": "projects/EYETLE/tools/eye_tracking_test.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/blink_events.py",
+    "destination": "projects/EYETLE/tools/blink_events.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/smoke_fusion_events.py",
+    "destination": "projects/EYETLE/tools/smoke_fusion_events.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/gaze_3d.py",
+    "destination": "projects/EYETLE/tools/gaze_3d.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/purest/bridge.cpp",
+    "destination": "projects/EYETLE/tools/purest/bridge.cpp"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/purest/build.py",
+    "destination": "projects/EYETLE/tools/purest/build.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/purest/sources.json",
+    "destination": "projects/EYETLE/tools/purest/sources.json"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/itoh/compat.h",
+    "destination": "projects/EYETLE/tools/itoh/compat.h"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/itoh/bridge.cpp",
+    "destination": "projects/EYETLE/tools/itoh/bridge.cpp"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/tools/itoh/build.py",
+    "destination": "projects/EYETLE/tools/itoh/build.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/test/test_fusion.py",
+    "destination": "projects/EYETLE/test/test_fusion.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/test/test_gaze_3d.py",
+    "destination": "projects/EYETLE/test/test_gaze_3d.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/test/test_itoh.py",
+    "destination": "projects/EYETLE/test/test_itoh.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/test/test_ritnet.py",
+    "destination": "projects/EYETLE/test/test_ritnet.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/test/test_gaze_calibration.py",
+    "destination": "projects/EYETLE/test/test_gaze_calibration.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/test/test_fusion_events_controller.py",
+    "destination": "projects/EYETLE/test/test_fusion_events_controller.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/test/test_ritnet_crop_tracking.py",
+    "destination": "projects/EYETLE/test/test_ritnet_crop_tracking.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/test/test_dual_eye_tracker.py",
+    "destination": "projects/EYETLE/test/test_dual_eye_tracker.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/test/test_intent_feedback.py",
+    "destination": "projects/EYETLE/test/test_intent_feedback.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/test/test_dual_blink.py",
+    "destination": "projects/EYETLE/test/test_dual_blink.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/test/test_ritnet_blink.py",
+    "destination": "projects/EYETLE/test/test_ritnet_blink.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/test/test_teyed.py",
+    "destination": "projects/EYETLE/test/test_teyed.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/test/test_blink_events.py",
+    "destination": "projects/EYETLE/test/test_blink_events.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/test/fixtures/provenance.json",
+    "destination": "projects/EYETLE/test/fixtures/provenance.json"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/test/fixtures/portrait.jpg",
+    "destination": "projects/EYETLE/test/fixtures/portrait.jpg"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/models/ritnet/ritnet_320x240_b2.json",
+    "destination": "projects/EYETLE/models/ritnet/ritnet_320x240_b2.json"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/models/ritnet/ritnet_640x480.json",
+    "destination": "projects/EYETLE/models/ritnet/ritnet_640x480.json"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/models/ritnet/validation.json",
+    "destination": "projects/EYETLE/models/ritnet/validation.json"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/models/ritnet/export-requirements.txt",
+    "destination": "projects/EYETLE/models/ritnet/export-requirements.txt"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/models/ritnet/ritnet_320x240.json",
+    "destination": "projects/EYETLE/models/ritnet/ritnet_320x240.json"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/models/ritnet/LICENSE.txt",
+    "destination": "projects/EYETLE/models/ritnet/LICENSE.txt"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/models/teyed/export-validation.json",
+    "destination": "projects/EYETLE/models/teyed/export-validation.json"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/models/teyed/sources.json",
+    "destination": "projects/EYETLE/models/teyed/sources.json"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/models/teyed/MEYE-LICENSE.txt",
+    "destination": "projects/EYETLE/models/teyed/MEYE-LICENSE.txt"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/src/eye_turtle_control/setup.py",
+    "destination": "projects/EYETLE/src/eye_turtle_control/setup.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/src/eye_turtle_control/package.xml",
+    "destination": "projects/EYETLE/src/eye_turtle_control/package.xml"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/src/eye_turtle_control/setup.cfg",
+    "destination": "projects/EYETLE/src/eye_turtle_control/setup.cfg"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/src/eye_turtle_control/resource/eye_turtle_control",
+    "destination": "projects/EYETLE/src/eye_turtle_control/resource/eye_turtle_control"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/src/eye_turtle_control/launch/eye_turtle.launch.py",
+    "destination": "projects/EYETLE/src/eye_turtle_control/launch/eye_turtle.launch.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/src/eye_turtle_control/eye_turtle_control/camera_tracker.py",
+    "destination": "projects/EYETLE/src/eye_turtle_control/eye_turtle_control/camera_tracker.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/src/eye_turtle_control/eye_turtle_control/controller.py",
+    "destination": "projects/EYETLE/src/eye_turtle_control/eye_turtle_control/controller.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/src/eye_turtle_control/eye_turtle_control/resume.py",
+    "destination": "projects/EYETLE/src/eye_turtle_control/eye_turtle_control/resume.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/src/eye_turtle_control/eye_turtle_control/__init__.py",
+    "destination": "projects/EYETLE/src/eye_turtle_control/eye_turtle_control/__init__.py"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/docs/eye_control_pause_resume.png",
+    "destination": "projects/EYETLE/docs/eye_control_pause_resume.png"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/docs/eye_control_pause_resume_proposal.png",
+    "destination": "projects/EYETLE/docs/eye_control_pause_resume_proposal.png"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/docs/eye_control_state_machine.png",
+    "destination": "projects/EYETLE/docs/eye_control_state_machine.png"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/docs/EYE_CONTROL_ARCHITECTURE_AND_INTERFACES.md",
+    "destination": "projects/EYETLE/docs/EYE_CONTROL_ARCHITECTURE_AND_INTERFACES.md"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/docs/STATE_MACHINE_PROPOSAL.md",
+    "destination": "projects/EYETLE/docs/STATE_MACHINE_PROPOSAL.md"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/docs/eye_control_proposed_state_machine.png",
+    "destination": "projects/EYETLE/docs/eye_control_proposed_state_machine.png"
+  },
+  {
+    "source": "/home/whill/projects/EYETLE/docs/archive/EYE_CONTROL_PRE_FUSION_SUMMARY_2026-10-16.md",
+    "destination": "projects/EYETLE/docs/archive/EYE_CONTROL_PRE_FUSION_SUMMARY_2026-10-16.md"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/HARDWARE.md",
+    "destination": "projects/Ble2WChair/HARDWARE.md"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/run_offline.sh",
+    "destination": "projects/Ble2WChair/run_offline.sh"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/run_hardware.sh",
+    "destination": "projects/Ble2WChair/run_hardware.sh"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/whill_ros_env.bash",
+    "destination": "projects/Ble2WChair/whill_ros_env.bash"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/LICENSE",
+    "destination": "projects/Ble2WChair/LICENSE"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/README.md",
+    "destination": "projects/Ble2WChair/README.md"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/.gitignore",
+    "destination": "projects/Ble2WChair/.gitignore"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/OFFLINE.md",
+    "destination": "projects/Ble2WChair/OFFLINE.md"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/tools/smoke_pipeline.py",
+    "destination": "projects/Ble2WChair/tools/smoke_pipeline.py"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/setup.py",
+    "destination": "projects/Ble2WChair/src/whill_controller/setup.py"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/package.xml",
+    "destination": "projects/Ble2WChair/src/whill_controller/package.xml"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/setup.cfg",
+    "destination": "projects/Ble2WChair/src/whill_controller/setup.cfg"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/test/test_motion_model.py",
+    "destination": "projects/Ble2WChair/src/whill_controller/test/test_motion_model.py"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/test/test_calibration_lock.py",
+    "destination": "projects/Ble2WChair/src/whill_controller/test/test_calibration_lock.py"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/test/test_serial_connection.py",
+    "destination": "projects/Ble2WChair/src/whill_controller/test/test_serial_connection.py"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/test/test_flake8.py",
+    "destination": "projects/Ble2WChair/src/whill_controller/test/test_flake8.py"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/test/test_pep257.py",
+    "destination": "projects/Ble2WChair/src/whill_controller/test/test_pep257.py"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/whill_controller/controller_node.py",
+    "destination": "projects/Ble2WChair/src/whill_controller/whill_controller/controller_node.py"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/whill_controller/calibration_logger.py",
+    "destination": "projects/Ble2WChair/src/whill_controller/whill_controller/calibration_logger.py"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/whill_controller/motion_model.py",
+    "destination": "projects/Ble2WChair/src/whill_controller/whill_controller/motion_model.py"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/whill_controller/serial_connection.py",
+    "destination": "projects/Ble2WChair/src/whill_controller/whill_controller/serial_connection.py"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/whill_controller/__init__.py",
+    "destination": "projects/Ble2WChair/src/whill_controller/whill_controller/__init__.py"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/config/default_calibration.json",
+    "destination": "projects/Ble2WChair/src/whill_controller/config/default_calibration.json"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/config/controller.yaml",
+    "destination": "projects/Ble2WChair/src/whill_controller/config/controller.yaml"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/resource/whill_controller",
+    "destination": "projects/Ble2WChair/src/whill_controller/resource/whill_controller"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/launch/calibration.launch.py",
+    "destination": "projects/Ble2WChair/src/whill_controller/launch/calibration.launch.py"
+  },
+  {
+    "source": "/home/whill/projects/Ble2WChair/src/whill_controller/launch/controller.launch.py",
+    "destination": "projects/Ble2WChair/src/whill_controller/launch/controller.launch.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/EYE_README.md",
+    "destination": "wheelchair_shared_ws/EYE_README.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/README.md",
+    "destination": "wheelchair_shared_ws/README.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/TEST_RESULTS.md",
+    "destination": "wheelchair_shared_ws/TEST_RESULTS.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/.gitignore",
+    "destination": "wheelchair_shared_ws/.gitignore"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/requirements-runtime.txt",
+    "destination": "wheelchair_shared_ws/requirements-runtime.txt"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_keyboard_interface.py",
+    "destination": "wheelchair_shared_ws/tests/test_keyboard_interface.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_discrete_control.py",
+    "destination": "wheelchair_shared_ws/tests/test_discrete_control.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_clock_worker.py",
+    "destination": "wheelchair_shared_ws/tests/test_clock_worker.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_corridor_assist.py",
+    "destination": "wheelchair_shared_ws/tests/test_corridor_assist.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_stationary_turn.py",
+    "destination": "wheelchair_shared_ws/tests/test_stationary_turn.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_ros_health.py",
+    "destination": "wheelchair_shared_ws/tests/test_ros_health.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_task_input.py",
+    "destination": "wheelchair_shared_ws/tests/test_task_input.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_passage.py",
+    "destination": "wheelchair_shared_ws/tests/test_passage.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_path_tracking.py",
+    "destination": "wheelchair_shared_ws/tests/test_path_tracking.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_junction_regression.py",
+    "destination": "wheelchair_shared_ws/tests/test_junction_regression.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_task_manager.py",
+    "destination": "wheelchair_shared_ws/tests/test_task_manager.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_manual_micro_turn.py",
+    "destination": "wheelchair_shared_ws/tests/test_manual_micro_turn.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_directional.py",
+    "destination": "wheelchair_shared_ws/tests/test_directional.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_turn_adjustment.py",
+    "destination": "wheelchair_shared_ws/tests/test_turn_adjustment.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_eye_resume_integration.py",
+    "destination": "wheelchair_shared_ws/tests/test_eye_resume_integration.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_task_planning.py",
+    "destination": "wheelchair_shared_ws/tests/test_task_planning.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_eye_direction_launcher.py",
+    "destination": "wheelchair_shared_ws/tests/test_eye_direction_launcher.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_indexed_clearance.py",
+    "destination": "wheelchair_shared_ws/tests/test_indexed_clearance.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/tests/test_smac_lattice.py",
+    "destination": "wheelchair_shared_ws/tests/test_smac_lattice.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/vendor/runtime-packages.json",
+    "destination": "wheelchair_shared_ws/vendor/runtime-packages.json"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/vendor/RUNTIME_README.md",
+    "destination": "wheelchair_shared_ws/vendor/RUNTIME_README.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/vendor/nav2/manifest.json",
+    "destination": "wheelchair_shared_ws/vendor/nav2/manifest.json"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/vendor/smac/manifest.json",
+    "destination": "wheelchair_shared_ws/vendor/smac/manifest.json"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/navigation_rviz.sh",
+    "destination": "wheelchair_shared_ws/scripts/navigation_rviz.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/env.sh",
+    "destination": "wheelchair_shared_ws/scripts/env.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_office_directional.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_office_directional.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_eye_3d_transport.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_eye_3d_transport.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/smac_env.sh",
+    "destination": "wheelchair_shared_ws/scripts/smac_env.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/intent_keyboard.sh",
+    "destination": "wheelchair_shared_ws/scripts/intent_keyboard.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/install_scan_viz_deps.py",
+    "destination": "wheelchair_shared_ws/scripts/install_scan_viz_deps.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/run_direction_sim.sh",
+    "destination": "wheelchair_shared_ws/scripts/run_direction_sim.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/diagnose_office_stop.py",
+    "destination": "wheelchair_shared_ws/scripts/diagnose_office_stop.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/import_clearpath_office.py",
+    "destination": "wheelchair_shared_ws/scripts/import_clearpath_office.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/run_direction_tight_sim.sh",
+    "destination": "wheelchair_shared_ws/scripts/run_direction_tight_sim.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_turn_adjustment.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_turn_adjustment.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/status.sh",
+    "destination": "wheelchair_shared_ws/scripts/status.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_directional.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_directional.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/process_cleanup.py",
+    "destination": "wheelchair_shared_ws/scripts/process_cleanup.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_costmap_lifecycle.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_costmap_lifecycle.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/visualize_safety.sh",
+    "destination": "wheelchair_shared_ws/scripts/visualize_safety.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_eye_directional.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_eye_directional.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_smac_interface.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_smac_interface.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/keyboard.sh",
+    "destination": "wheelchair_shared_ws/scripts/keyboard.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/run_smac_sim.sh",
+    "destination": "wheelchair_shared_ws/scripts/run_smac_sim.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/import_willow_office.py",
+    "destination": "wheelchair_shared_ws/scripts/import_willow_office.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/audit_narrow_geometry.py",
+    "destination": "wheelchair_shared_ws/scripts/audit_narrow_geometry.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_direct_keyboard.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_direct_keyboard.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_shared.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_shared.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/direction_keyboard.sh",
+    "destination": "wheelchair_shared_ws/scripts/direction_keyboard.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/record.sh",
+    "destination": "wheelchair_shared_ws/scripts/record.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_willow_office.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_willow_office.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/smac_interface.sh",
+    "destination": "wheelchair_shared_ws/scripts/smac_interface.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/generate_wheelchair_lattice.py",
+    "destination": "wheelchair_shared_ws/scripts/generate_wheelchair_lattice.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/run_eye_sim.py",
+    "destination": "wheelchair_shared_ws/scripts/run_eye_sim.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_narrow_matrix.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_narrow_matrix.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_turn_adjustment_notice.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_turn_adjustment_notice.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_intent_camera.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_intent_camera.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/install_smac_runtime.py",
+    "destination": "wheelchair_shared_ws/scripts/install_smac_runtime.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_intent_tasks.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_intent_tasks.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/intent_latency_report.py",
+    "destination": "wheelchair_shared_ws/scripts/intent_latency_report.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_junction_request.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_junction_request.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_smac_sim.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_smac_sim.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/direction_status.sh",
+    "destination": "wheelchair_shared_ws/scripts/direction_status.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/validate_intent_eye.py",
+    "destination": "wheelchair_shared_ws/scripts/validate_intent_eye.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/install_nav2_runtime.py",
+    "destination": "wheelchair_shared_ws/scripts/install_nav2_runtime.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/run_willow_sim.sh",
+    "destination": "wheelchair_shared_ws/scripts/run_willow_sim.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/scripts/run_sim.sh",
+    "destination": "wheelchair_shared_ws/scripts/run_sim.sh"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_nav2/plugins.xml",
+    "destination": "wheelchair_shared_ws/src/wheelchair_nav2/plugins.xml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_nav2/package.xml",
+    "destination": "wheelchair_shared_ws/src/wheelchair_nav2/package.xml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_nav2/CMakeLists.txt",
+    "destination": "wheelchair_shared_ws/src/wheelchair_nav2/CMakeLists.txt"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_nav2/LICENSE.costmap",
+    "destination": "wheelchair_shared_ws/src/wheelchair_nav2/LICENSE.costmap"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_nav2/include/wheelchair_nav2/fixed_action_generator.hpp",
+    "destination": "wheelchair_shared_ws/src/wheelchair_nav2/include/wheelchair_nav2/fixed_action_generator.hpp"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_nav2/src/costmap_node.cpp",
+    "destination": "wheelchair_shared_ws/src/wheelchair_nav2/src/costmap_node.cpp"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_nav2/src/fixed_action_generator.cpp",
+    "destination": "wheelchair_shared_ws/src/wheelchair_nav2/src/fixed_action_generator.cpp"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_nav2/src/discrete_path_planner.cpp",
+    "destination": "wheelchair_shared_ws/src/wheelchair_nav2/src/discrete_path_planner.cpp"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_nav2/src/smac_lattice_interface.cpp",
+    "destination": "wheelchair_shared_ws/src/wheelchair_nav2/src/smac_lattice_interface.cpp"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_nav2/config/smac_lattice.yaml",
+    "destination": "wheelchair_shared_ws/src/wheelchair_nav2/config/smac_lattice.yaml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_nav2/config/wheelchair_lattice.json",
+    "destination": "wheelchair_shared_ws/src/wheelchair_nav2/config/wheelchair_lattice.json"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_nav2/config/nav2.yaml",
+    "destination": "wheelchair_shared_ws/src/wheelchair_nav2/config/nav2.yaml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_nav2/config/nav2_tight_sim.yaml",
+    "destination": "wheelchair_shared_ws/src/wheelchair_nav2/config/nav2_tight_sim.yaml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/setup.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/setup.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/package.xml",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/package.xml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/setup.cfg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/setup.cfg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/clock_worker.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/clock_worker.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/turn_adjustment.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/turn_adjustment.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/planner.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/planner.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/entries.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/entries.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/path_tracking.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/path_tracking.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/visualization.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/visualization.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/navigation.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/navigation.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/geometry.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/geometry.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/direction_input.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/direction_input.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/nodes.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/nodes.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/task_scope.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/task_scope.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/navigation_debug.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/navigation_debug.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/executor.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/executor.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/task_manager.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/task_manager.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/task_node.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/task_node.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/inputs.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/inputs.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/passage.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/passage.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/nav2_transport.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/nav2_transport.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/task_input.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/task_input.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/direction_manager.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/direction_manager.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/__init__.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/__init__.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/protocol.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/wheelchair_control/protocol.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/config/narrow_control.yaml",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/config/narrow_control.yaml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/config/narrow_control_tight_sim.yaml",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/config/narrow_control_tight_sim.yaml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/config/safety.rviz",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/config/safety.rviz"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/config/tasks.yaml",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/config/tasks.yaml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/config/directional.yaml",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/config/directional.yaml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/config/navigation_debug.rviz",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/config/navigation_debug.rviz"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/config/control.yaml",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/config/control.yaml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/resource/wheelchair_control",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/resource/wheelchair_control"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/launch/shared.launch.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/launch/shared.launch.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_control/launch/navigation_debug.launch.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_control/launch/navigation_debug.launch.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/package.xml",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/package.xml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/CMakeLists.txt",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/CMakeLists.txt"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/msg/IntentEvent.msg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/msg/IntentEvent.msg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/msg/ExecutionStatus.msg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/msg/ExecutionStatus.msg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/msg/ControlIntent.msg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/msg/ControlIntent.msg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/msg/TaskStatus.msg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/msg/TaskStatus.msg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/msg/DirectionEvent.msg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/msg/DirectionEvent.msg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/msg/InputHealth.msg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/msg/InputHealth.msg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/msg/ControlStatus.msg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/msg/ControlStatus.msg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/msg/NavigationIntentStatus.msg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/msg/NavigationIntentStatus.msg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/msg/ObstacleMap.msg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/msg/ObstacleMap.msg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/msg/IntentAck.msg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/msg/IntentAck.msg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/msg/CandidateStatus.msg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/msg/CandidateStatus.msg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/msg/DiscreteAction.msg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/msg/DiscreteAction.msg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/msg/EyeSample.msg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/msg/EyeSample.msg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_interfaces/srv/ComputeDiscretePath.srv",
+    "destination": "wheelchair_shared_ws/src/wheelchair_interfaces/srv/ComputeDiscretePath.srv"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/setup.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/setup.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/package.xml",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/package.xml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/setup.cfg",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/setup.cfg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/test/test_direction_transport.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/test/test_direction_transport.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/test/test_node_parameters.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/test/test_node_parameters.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/test/test_fusion.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/test/test_fusion.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/test/test_confirm_transport.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/test/test_confirm_transport.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/test/test_eye_core.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/test/test_eye_core.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/test/test_confirm.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/test/test_confirm.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/config/eye.yaml",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/config/eye.yaml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/core.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/core.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/fusion.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/fusion.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/confirm_node.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/confirm_node.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/node.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/node.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/resume.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/resume.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/mock.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/mock.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/confirm.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/confirm.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/__init__.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/eye_shared_control/__init__.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/resource/eye_shared_control",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/resource/eye_shared_control"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/eye_shared_control/launch/eye.launch.py",
+    "destination": "wheelchair_shared_ws/src/eye_shared_control/launch/eye.launch.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/setup.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/setup.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/package.xml",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/package.xml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/setup.cfg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/setup.cfg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/SIM_README.md",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/SIM_README.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/test/ros_smoke.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/test/ros_smoke.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/test/test_scene_geometry.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/test/test_scene_geometry.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/obstacle_map.json",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/obstacle_map.json"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/ADAPTATION.md",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/ADAPTATION.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/model.config",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/model.config"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/model.sdf",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/model.sdf"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/LICENSE.txt",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/LICENSE.txt"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/Tiles05_COL_VAR1_3K.jpg.001.jpg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/Tiles05_COL_VAR1_3K.jpg.001.jpg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/InteriorDesignRugStarryNight001_COL_VAR1_3K.jpg.001.jpg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/InteriorDesignRugStarryNight001_COL_VAR1_3K.jpg.001.jpg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/office.dae",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/office.dae"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/whiteboard.jpg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/whiteboard.jpg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/cardboard.jpg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/cardboard.jpg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/MetalCorrugatedIronSheet002_METALNESS_3K_METALNESS.jpg.002.jpg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/MetalCorrugatedIronSheet002_METALNESS_3K_METALNESS.jpg.002.jpg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/TilesRectangularMirrorGray001_COL_3K.jpg.001.jpg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/TilesRectangularMirrorGray001_COL_3K.jpg.001.jpg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/cp_walls.jpg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/cp_walls.jpg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/WoodFlooring044_COL_3K.jpg.001.jpg",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/WoodFlooring044_COL_3K.jpg.001.jpg"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/office_collision.dae",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/clearpath_office/meshes/office_collision.dae"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/obstacle_map.json",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/obstacle_map.json"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/model.config",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/model.config"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/SOURCE.json",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/SOURCE.json"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/model.sdf",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/model.sdf"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/LICENSE.txt",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/LICENSE.txt"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/materials/textures/Carpet_Berber_Pattern_Gray_.png",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/materials/textures/Carpet_Berber_Pattern_Gray_.png"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/materials/textures/Wood_Cherry_Original_.png",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/materials/textures/Wood_Cherry_Original_.png"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/materials/textures/__auto_2.png",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/materials/textures/__auto_2.png"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/materials/textures/Stone_Brushed_Khaki_.png",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/materials/textures/Stone_Brushed_Khaki_.png"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/materials/textures/__Wood_Bamboo_Medium_1.png",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/materials/textures/__Wood_Bamboo_Medium_1.png"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/materials/textures/__auto_12.png",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/materials/textures/__auto_12.png"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/materials/textures/Wood_Bamboo_Medium_.png",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/materials/textures/Wood_Bamboo_Medium_.png"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/meshes/willowgarage_visual.dae",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/meshes/willowgarage_visual.dae"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/meshes/office_collision.dae",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/models/willow_office/meshes/office_collision.dae"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/config/office_points.config",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/config/office_points.config"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/config/scan_points.config",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/config/scan_points.config"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/resource/wheelchair_sim",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/resource/wheelchair_sim"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/wheelchair_sim/scenes.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/wheelchair_sim/scenes.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/wheelchair_sim/watchdog.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/wheelchair_sim/watchdog.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/wheelchair_sim/world.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/wheelchair_sim/world.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/wheelchair_sim/first_person_view.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/wheelchair_sim/first_person_view.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/wheelchair_sim/map_node.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/wheelchair_sim/map_node.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/wheelchair_sim/__init__.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/wheelchair_sim/__init__.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_sim/launch/simulation.launch.py",
+    "destination": "wheelchair_shared_ws/src/wheelchair_sim/launch/simulation.launch.py"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_scan_viz/package.xml",
+    "destination": "wheelchair_shared_ws/src/wheelchair_scan_viz/package.xml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_scan_viz/CMakeLists.txt",
+    "destination": "wheelchair_shared_ws/src/wheelchair_scan_viz/CMakeLists.txt"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_scan_viz/src/ScanPoints.cc",
+    "destination": "wheelchair_shared_ws/src/wheelchair_scan_viz/src/ScanPoints.cc"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_scan_viz/src/ScanPoints.qrc",
+    "destination": "wheelchair_shared_ws/src/wheelchair_scan_viz/src/ScanPoints.qrc"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/src/wheelchair_scan_viz/src/ScanPoints.qml",
+    "destination": "wheelchair_shared_ws/src/wheelchair_scan_viz/src/ScanPoints.qml"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/docs/SMAC_STATE_LATTICE_HUMBLE.md",
+    "destination": "wheelchair_shared_ws/docs/SMAC_STATE_LATTICE_HUMBLE.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/docs/DIRECTIONAL_INTENT.md",
+    "destination": "wheelchair_shared_ws/docs/DIRECTIONAL_INTENT.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/docs/INTENT_EXPERIMENTS.md",
+    "destination": "wheelchair_shared_ws/docs/INTENT_EXPERIMENTS.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/docs/EYE_BLINK_DIAGNOSIS_20261016.md",
+    "destination": "wheelchair_shared_ws/docs/EYE_BLINK_DIAGNOSIS_20261016.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/docs/TURN_ADJUSTMENT.md",
+    "destination": "wheelchair_shared_ws/docs/TURN_ADJUSTMENT.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/docs/NAVIGATION_RVIZ.md",
+    "destination": "wheelchair_shared_ws/docs/NAVIGATION_RVIZ.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/docs/TIGHT_SIM_PROFILE.md",
+    "destination": "wheelchair_shared_ws/docs/TIGHT_SIM_PROFILE.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/docs/INTENT_PROTOCOL_V1.md",
+    "destination": "wheelchair_shared_ws/docs/INTENT_PROTOCOL_V1.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/docs/EYE_DIRECTIONAL.md",
+    "destination": "wheelchair_shared_ws/docs/EYE_DIRECTIONAL.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/docs/EYE_FUSION_INTERFACE.md",
+    "destination": "wheelchair_shared_ws/docs/EYE_FUSION_INTERFACE.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/docs/WILLOW_OFFICE.md",
+    "destination": "wheelchair_shared_ws/docs/WILLOW_OFFICE.md"
+  },
+  {
+    "source": "/home/whill/wheelchair_shared_ws/docs/NAV2_OFFICE_VALIDATION.md",
+    "destination": "wheelchair_shared_ws/docs/NAV2_OFFICE_VALIDATION.md"
+  }
+]

@@ -1,3 +1,5 @@
+> 统一项目入口与当前状态见 [根目录 README](../../README.md)。默认融合手势以 [2026-10-19 接入总结](../../projects/EYE_WHEELCHAIR_INTEGRATION_SUMMARY_20261019.md) 为准；下文保留历史模式说明。
+
 # Eye Turtle Control
 
 > **2026-10-16：默认海龟入口为 RITnet + PuReST 二维融合。** 算法、ROS 接口、数据格式和最新修复见 [技术总览](docs/EYE_CONTROL_ARCHITECTURE_AND_INTERFACES.md)，操作见 [当前使用总结](CURRENT_EYE_CONTROL_SUMMARY.md)。下文三维方案为历史/对照入口。

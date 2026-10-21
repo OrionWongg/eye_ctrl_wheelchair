@@ -1,0 +1,8 @@
+{
+  "source": "https://storage.googleapis.com/mediapipe-assets/portrait.jpg",
+  "sha256": "a6f11efaa834706db23f275b6115058fa87fc7f14362681e6abe14e82749de3e",
+  "video": "portrait.avi",
+  "frames": 140,
+  "fps": 20,
+  "description": "Stationary real face: verifies inference and ROS transport, not deliberate blinking."
+}

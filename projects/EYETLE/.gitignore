@@ -16,7 +16,8 @@ test/fixtures/*.avi
 
 # Pretrained model deployment artifacts
 .venv-model/
-# Required native PuReST sources and portable ONNX models are versioned here.
+third_party/
+models/ritnet/*.onnx
 models/ritnet/*.engine
 model-results/
 

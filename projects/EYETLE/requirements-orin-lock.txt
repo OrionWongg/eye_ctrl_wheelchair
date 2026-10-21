@@ -1,0 +1,18 @@
+absl-py==2.5.0
+cffi==2.1.1
+evdev==1.9.3
+flatbuffers==25.12.19
+jax==0.6.2
+jaxlib @ file:///home/whill/pipeline-validation/wheels/jaxlib-0.6.2-cp310-cp310-manylinux2014_aarch64.whl#sha256=4205d098ce8efb5f7fe2fe5098bae6036094dc8d8829f5e0e0d7a9b155326336
+mediapipe==0.10.18
+ml_dtypes==0.5.4
+numpy==1.26.4
+opencv-contrib-python==4.11.0.86
+opt_einsum==3.4.0
+protobuf==4.25.9
+pycparser==3.0
+pynput==1.7.7
+python-xlib==0.33
+scipy==1.15.3
+sentencepiece==0.2.2
+sounddevice==0.5.6

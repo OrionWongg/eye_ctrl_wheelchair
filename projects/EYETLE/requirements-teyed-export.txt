@@ -1,0 +1,8 @@
+# Conversion environment only; live inference uses existing TensorRT runtime.
+torch==2.6.0
+keras==3.12.4
+numpy==1.26.4
+ml-dtypes==0.5.4
+h5py==3.16.0
+onnx==1.17.0
+onnxruntime==1.23.2

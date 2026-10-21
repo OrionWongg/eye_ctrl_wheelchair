@@ -1,0 +1,18 @@
+{
+  "repository": "http://packages.ros.org/ros2/ubuntu/",
+  "architecture": "arm64",
+  "packages": [
+    {
+      "Package": "ros-humble-nav2-smac-planner",
+      "Version": "1.1.20-1jammy.20260916.131156",
+      "SHA256": "38419e31d62a9cda9e876ac5a15bd8a2fcd6fcf613907e5c4bbad06ddae39fb3",
+      "Filename": "pool/main/r/ros-humble-nav2-smac-planner/ros-humble-nav2-smac-planner_1.1.20-1jammy.20260916.131156_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-ompl",
+      "Version": "1.7.0-4jammy.20260306.230109",
+      "SHA256": "514402c1ed60ef9a1889360edf1d2bdaf03bb10337c8432fff17e666fec2b715",
+      "Filename": "pool/main/r/ros-humble-ompl/ros-humble-ompl_1.7.0-4jammy.20260306.230109_arm64.deb"
+    }
+  ]
+}

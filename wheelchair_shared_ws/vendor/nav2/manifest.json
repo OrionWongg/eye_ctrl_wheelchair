@@ -1,0 +1,96 @@
+{
+  "repository": "http://packages.ros.org/ros2/ubuntu/",
+  "architecture": "arm64",
+  "packages": [
+    {
+      "Package": "ros-humble-bond",
+      "Version": "4.1.4-1jammy.20260907.213324",
+      "SHA256": "d33b07e69b4ccb8a72ca6ef8ded95853e2cbf809162330db3e0dd6e008052185",
+      "Filename": "pool/main/r/ros-humble-bond/ros-humble-bond_4.1.4-1jammy.20260907.213324_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-bondcpp",
+      "Version": "4.1.4-1jammy.20260909.212554",
+      "SHA256": "e61e6d4ca4193a1065130e18760171f446ed25dd25bdc3f06355148bd3ddc6a4",
+      "Filename": "pool/main/r/ros-humble-bondcpp/ros-humble-bondcpp_4.1.4-1jammy.20260909.212554_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-diagnostic-updater",
+      "Version": "4.0.7-1jammy.20260908.025324",
+      "SHA256": "770cdd58c06ffba767a35f266d5889a7424d2681f3102f8c09bfbf019606fa05",
+      "Filename": "pool/main/r/ros-humble-diagnostic-updater/ros-humble-diagnostic-updater_4.0.7-1jammy.20260908.025324_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-dwb-core",
+      "Version": "1.1.20-1jammy.20260916.130615",
+      "SHA256": "6aff373886061267252652fecdb220dc67e08946a841996e44f031e434e7d0d3",
+      "Filename": "pool/main/r/ros-humble-dwb-core/ros-humble-dwb-core_1.1.20-1jammy.20260916.130615_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-dwb-msgs",
+      "Version": "1.1.20-1jammy.20260907.230913",
+      "SHA256": "6df8e036ef644773b9722e15a9f1d975a84f3108faa4b45902205a77ab19953e",
+      "Filename": "pool/main/r/ros-humble-dwb-msgs/ros-humble-dwb-msgs_1.1.20-1jammy.20260907.230913_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-nav-2d-msgs",
+      "Version": "1.1.20-1jammy.20260907.224739",
+      "SHA256": "950dc7a9a4cfd5d2e80eed6c343623bec3fe5698c56d6b327d26ab7fc15b18f5",
+      "Filename": "pool/main/r/ros-humble-nav-2d-msgs/ros-humble-nav-2d-msgs_1.1.20-1jammy.20260907.224739_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-nav-2d-utils",
+      "Version": "1.1.20-1jammy.20260916.053930",
+      "SHA256": "47485e7642fd1402df9d32c7115a79cc737986a038c055e4999191e28db87672",
+      "Filename": "pool/main/r/ros-humble-nav-2d-utils/ros-humble-nav-2d-utils_1.1.20-1jammy.20260916.053930_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-nav2-common",
+      "Version": "1.1.20-1jammy.20260907.233655",
+      "SHA256": "405d6431bb2f0f04398c07ae7a699631deac92b6e212e9d89c0550853658871d",
+      "Filename": "pool/main/r/ros-humble-nav2-common/ros-humble-nav2-common_1.1.20-1jammy.20260907.233655_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-nav2-core",
+      "Version": "1.1.20-1jammy.20260916.130152",
+      "SHA256": "c4f05db931cbf70622ee595c87649ca0109bbae358470783c684e5b51921a9ed",
+      "Filename": "pool/main/r/ros-humble-nav2-core/ros-humble-nav2-core_1.1.20-1jammy.20260916.130152_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-nav2-costmap-2d",
+      "Version": "1.1.20-1jammy.20260916.124031",
+      "SHA256": "9a7fb135bb07a7abe92cd9231471af867906d76a5851b2ed0c56ba272a9cfbe8",
+      "Filename": "pool/main/r/ros-humble-nav2-costmap-2d/ros-humble-nav2-costmap-2d_1.1.20-1jammy.20260916.124031_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-nav2-lifecycle-manager",
+      "Version": "1.1.20-1jammy.20260916.123216",
+      "SHA256": "2233a256e1598553e5b5b5ea3fbf0a48cc6349c85b551020341d49c9c4b2a605",
+      "Filename": "pool/main/r/ros-humble-nav2-lifecycle-manager/ros-humble-nav2-lifecycle-manager_1.1.20-1jammy.20260916.123216_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-nav2-msgs",
+      "Version": "1.1.20-1jammy.20260908.013256",
+      "SHA256": "aaffec99190aeae54c79ce3ec2a1d80de394140aa19d4626145390094d6151ef",
+      "Filename": "pool/main/r/ros-humble-nav2-msgs/ros-humble-nav2-msgs_1.1.20-1jammy.20260908.013256_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-nav2-util",
+      "Version": "1.1.20-1jammy.20260916.052614",
+      "SHA256": "392a06da9ee5d781db935c4b3aa56089be0f78a125e866e18d6ae0212d109d12",
+      "Filename": "pool/main/r/ros-humble-nav2-util/ros-humble-nav2-util_1.1.20-1jammy.20260916.052614_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-nav2-voxel-grid",
+      "Version": "1.1.20-1jammy.20260908.021935",
+      "SHA256": "2799a1efd258e04a83c1c69c5aea24e5c53ed8a829d26087337ff71daddd5ccf",
+      "Filename": "pool/main/r/ros-humble-nav2-voxel-grid/ros-humble-nav2-voxel-grid_1.1.20-1jammy.20260908.021935_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-smclib",
+      "Version": "4.1.4-1jammy.20260317.155452",
+      "SHA256": "0b32026c44f8f3305372c70992f9f5bcadeb467cbead2d263a3eba049f8626b7",
+      "Filename": "pool/main/r/ros-humble-smclib/ros-humble-smclib_4.1.4-1jammy.20260317.155452_arm64.deb"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "src/pupil-detection-methods/PuRe.cpp": "723a77e805c6ae16a007f549ec1cc022c5a1629159e8a2671df2294b17cbbf29",
+  "src/pupil-detection-methods/PuRe.h": "9bc1df1eec3434d7fd63cf7c1ce5e3eabc7428ef768f0763b1a7281ec84e8105",
+  "src/pupil-detection-methods/PuReST.cpp": "e3c43a7c4697dbbb365ceb942c8a489ef189236817dba0cdb084e3fa618f6cd0",
+  "src/pupil-detection-methods/PuReST.h": "60dae78f8da5ce2ea422911ea668d2fd3f56b374102eaebed89ce8dc1342728f",
+  "src/pupil-detection-methods/Pupil.h": "ff61940956b13903dc3233341efe9424d18481f5eede129c6ed60406dce0e214",
+  "src/pupil-detection-methods/PupilDetectionMethod.cpp": "2643378f5c7981ee5e2e7af86b1c4f5ec9be13731fe574c8f040d0b3a09392dc",
+  "src/pupil-detection-methods/PupilDetectionMethod.h": "a59f5af746ec14f0b8624736ac0fff8db48007314d31045438b037f97cc2d8c4",
+  "LICENSE": "61122a2cf4af9ca8e430de3700424ca4f994ecb6f2869b1f40fabc7bbdfcdc6a",
+  "Third_Party_Licenses.html": "85765514d177661a522b5fa3b0f08de37370a4f795aeb2b8eccce5296269ada4"
+}

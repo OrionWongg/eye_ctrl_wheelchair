@@ -1,0 +1,16 @@
+wheelchair_task_manager:
+  ros__parameters:
+    use_sim_time: true
+    max_time: 10.0
+    max_distance: 3.0
+    max_event_ttl: 2.0
+    source_timeout: 0.25
+    status_timeout: 0.35
+    odom_timeout: 0.15
+    max_adjust_angle: 0.4363323129985824
+    linear_brake: 0.5
+    angular_brake: 0.7
+    stop_delay: 0.25
+    # Manager adapter TTL + action TTL + downstream transport/control delay.
+    budget_stop_delay: 0.50
+    stop_dwell: 0.15

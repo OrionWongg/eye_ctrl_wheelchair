@@ -1,0 +1,2 @@
+# Native polygon-distance acceleration, compatible with Ubuntu 22.04 NumPy.
+shapely==2.0.7

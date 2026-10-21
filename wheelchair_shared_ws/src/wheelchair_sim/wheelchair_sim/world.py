@@ -1,13 +1,9 @@
 """Pure SDF generator: no model downloads, all geometry has physical collisions."""
-import os
 from .scenes import obstacles,MESH_SCENES
 
 def plugin(short, body=''):
     names={'physics':'Physics','user-commands':'UserCommands','scene-broadcaster':'SceneBroadcaster','sensors':'Sensors','contact':'Contact','diff-drive':'DiffDrive','odometry-publisher':'OdometryPublisher'}
-    modern = os.environ.get("ROS_DISTRO") == "jazzy"
-    library = "gz-sim" if modern else "ignition-gazebo"
-    namespace = "gz::sim" if modern else "ignition::gazebo"
-    return f'<plugin filename="{library}-{short}-system" name="{namespace}::systems::{names[short]}">{body}</plugin>'
+    return f'<plugin filename="ignition-gazebo-{short}-system" name="ignition::gazebo::systems::{names[short]}">{body}</plugin>'
 def geom_box(size): return f'<box><size>{size}</size></box>'
 def shapes(name,geo,color='0.18 0.3 0.5 1',pose='0 0 0 0 0 0',friction=None):
     surface='' if friction is None else f'<surface><friction><ode><mu>{friction}</mu><mu2>{friction}</mu2></ode></friction></surface>'
@@ -64,7 +60,4 @@ def world(scene, first_person=False):
         s=s.replace('<visual name="ground_visual"><pose>0 0 0 0 0 0</pose>',
                     '<visual name="ground_visual"><pose>0 0 -0.02 0 0 0</pose>')
         s+=f'<include><uri>model://{scene}</uri></include>'
-    result = s+wheelchair(first_person)+'</world></sdf>'
-    if os.environ.get('ROS_DISTRO') == 'jazzy':
-        result = result.replace('ignition_frame_id', 'gz_frame_id')
-    return result
+    return s+wheelchair(first_person)+'</world></sdf>' 

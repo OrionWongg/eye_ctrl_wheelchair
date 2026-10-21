@@ -1,0 +1,5 @@
+# Built and verified on Jetson Orin aarch64 / Python 3.10.
+# Install into existing .venv; preserve its CUDA OpenCV and TensorRT.
+pye3d==0.3.2
+msgpack==1.2.3
+sortedcontainers==2.4.0
