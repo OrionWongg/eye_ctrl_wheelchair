@@ -8,6 +8,11 @@ from .geometry import IndexedPolygon
 
 def occupied_rectangles(data,width,height,resolution,origin):
     """Compress lethal/unknown raster cells to exact cell-area rectangles."""
+    return [IndexedPolygon(r) for r in cell_rectangles(data,width,height,resolution,origin)]
+
+
+def cell_rectangles(data,width,height,resolution,origin):
+    """Vertex tuples of occupied_rectangles without collision indexing."""
     cells=np.asarray(data,dtype=np.int16).reshape(height,width)
     occupied=(cells<0)|(cells>=100)
     # Extract all row runs in one native array operation; avoid allocating
@@ -27,7 +32,7 @@ def occupied_rectangles(data,width,height,resolution,origin):
                 x0,x1=interval;y0,y1=start,row
                 a,b=origin[0]+x0*resolution,origin[0]+x1*resolution
                 c,d=origin[1]+y0*resolution,origin[1]+y1*resolution
-                rectangles.append(IndexedPolygon(((a,c),(b,c),(b,d),(a,d))))
+                rectangles.append(((a,c),(b,c),(b,d),(a,d)))
                 del active[interval]
         for interval in spans:active.setdefault(interval,row)
     return rectangles

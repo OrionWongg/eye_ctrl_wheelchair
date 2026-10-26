@@ -1,0 +1,23 @@
+{
+  "polygons": 455,
+  "map_stamp": 1793014634.3866615,
+  "pose": [
+    3.4440245749691547,
+    -0.17999326993487705,
+    0.0585016603130224
+  ],
+  "results": {
+    "original_union": {
+      "median_ms": 45.45247600071889,
+      "max_ms": 46.12958000143408,
+      "passage": null,
+      "reason": "PASSAGE_UNCERTAIN_OR_BRANCH"
+    },
+    "rectangle_intervals": {
+      "median_ms": 2.0380799996928545,
+      "max_ms": 2.2121200017863885,
+      "passage": null,
+      "reason": "PASSAGE_UNCERTAIN_OR_BRANCH"
+    }
+  }
+}

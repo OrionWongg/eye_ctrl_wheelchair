@@ -1,5 +1,5 @@
 """ROS wiring for the discrete planner and simulation executor.
-The complete obstacle oracle is SIMULATION ONLY: no real-robot perception adapter exists.
+Simulation uses a complete oracle; hardware supplies a conservative scan map with unknown cells blocked.
 """
 import json
 import math
@@ -58,6 +58,7 @@ class PlannerNode(Node):
         super().__init__('wheelchair_safety_gate')
         backend=self.declare_parameter('navigation_backend','none').value
         self.declare_parameter('path_planner_backend','nav2_dwb')
+        self.allow_dynamic_map=self.declare_parameter('allow_dynamic_map',False).value
         self.cfg=config(self);self.core=Planner(self.cfg)
         if backend not in ('none','nav2'):raise ValueError('Invalid navigation backend')
         self.path_client=None
@@ -66,7 +67,7 @@ class PlannerNode(Node):
             self.path_client=Nav2PathClient(self)
             self.core.path_provider=self.path_client
         self.session=str(uuid.uuid4());self.sequence=0
-        self.intent_guard=StreamGuard(.25);self.map_guard=StreamGuard(self.cfg.sensor_age);self.exec_guard=StreamGuard(.25)
+        self.intent_guard=StreamGuard(.25);self.map_guard=StreamGuard(self.cfg.map_age);self.exec_guard=StreamGuard(.25)
         self.clock_guard=ClockGuard()
         self.state=State();self.odom_received=self.scan_received=self.map_received=self.executor_received=-math.inf
         self.odom_stamp=self.scan_stamp=0.
@@ -106,7 +107,7 @@ class PlannerNode(Node):
         if not all(math.isfinite(x) for x in vals) or len(msg.ranges)<180:return
         if msg.angle_increment<=0 or abs(len(msg.ranges)*msg.angle_increment-2*math.pi)>.06:return
         if not 0<=msg.range_min<msg.range_max:return
-        if any(math.isnan(r) or r<msg.range_min for r in msg.ranges):return
+        if any(math.isnan(r) or (r>0. and r<msg.range_min) for r in msg.ranges):return
         self.scan_valid=True;self.scan_received=time.monotonic();self.scan_stamp=source_seconds(msg.header.stamp)
     def on_map(self,msg):
         begin=time.monotonic()
@@ -127,7 +128,7 @@ class PlannerNode(Node):
         if geometry!=self.map_geometry:
             shape=tuple(tuple((p.x,p.y) for p in poly.points) for poly in msg.obstacles)
             boundary=tuple((p.x,p.y) for p in msg.known_free_boundary.points)
-            if self.map_geometry is not None and self.cfg.mode=='corridor_assist':self.core.trip('PASSAGE_MAP_CHANGED')
+            if self.map_geometry is not None and self.cfg.mode=='corridor_assist' and not self.allow_dynamic_map:self.core.trip('PASSAGE_MAP_CHANGED')
             if not convex(boundary) or any(not convex(o) for o in shape):return
             self.obstacles=[IndexedPolygon(o) for o in shape]
             for i,o in enumerate(self.obstacles):o.obstacle_id=f'map_obstacle_{i}'

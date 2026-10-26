@@ -21,6 +21,7 @@ def generate_launch_description():
     baud = LaunchConfiguration('baud')
 
     return LaunchDescription([
+        DeclareLaunchArgument('eye_control_enabled', default_value='false'),
         DeclareLaunchArgument(
             'hardware_enabled',
             default_value='true',
@@ -43,8 +44,8 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'calibration_file',
-            default_value=os.path.join(
-                package_share, 'config', 'default_calibration.json'),
+            default_value=os.environ.get('IPAD_CALIBRATION_FILE', os.path.join(
+                package_share, 'config', 'ipad_calibration_20261009.json')),
             description='Named-point calibration JSON file',
         ),
         Node(
@@ -54,6 +55,8 @@ def generate_launch_description():
             parameters=[
                 parameters,
                 {
+                    'eye_control_enabled': ParameterValue(
+                        LaunchConfiguration('eye_control_enabled'), value_type=bool),
                     'hardware_enabled': ParameterValue(
                         hardware_enabled, value_type=bool),
                     'serial_port': serial_port,

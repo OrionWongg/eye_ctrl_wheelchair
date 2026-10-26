@@ -4,8 +4,9 @@ No route selection: one fixed axis and band per uninterrupted FORWARD request.
 import math
 from dataclasses import dataclass,replace
 import shapely
+import numpy as np
 from shapely.geometry import LineString,Polygon
-from .geometry import wrap,IndexedObstacles
+from .geometry import wrap,IndexedObstacles,polygon_bounds
 from .protocol import STOP,FORWARD,LEFT,RIGHT
 
 @dataclass
@@ -24,6 +25,42 @@ class Passage:
         return dx*c+dy*s,-dx*s+dy*c-self.center
     def as_dict(self):return vars(self).copy()
 
+def rectangle_sections(obstacles, origin, heading, longitudinal, lateral):
+    """Intersect axis-aligned rectangles with the same 36 scan segments.
+
+    Unioning polygons before intersecting a line is equivalent to merging their
+    clipped 1D intervals afterwards. Avoid the expensive whole-map GEOS union.
+    Non-rectangular maps retain the general geometry implementation below.
+    """
+    bounds=[]
+    for obstacle in obstacles:
+        if len(obstacle)!=4:return None
+        x0,x1,y0,y1=polygon_bounds(obstacle)
+        if set(obstacle)!={(x0,y0),(x0,y1),(x1,y0),(x1,y1)}:return None
+        bounds.append((x0,x1,y0,y1))
+    if not bounds:return [[] for _ in longitudinal]
+    c,s=math.cos(heading),math.sin(heading)
+    # The detector supports orthogonal axes. Keep the exact general path if a
+    # caller supplies a non-orthogonal locked passage.
+    if min(abs(c),abs(s))>1e-12:return None
+    b=np.asarray(bounds)
+    xs=b[:,:2]-origin[0];ys=b[:,2:]-origin[1]
+    along_lo=np.min(c*xs,axis=1)+np.min(s*ys,axis=1)
+    along_hi=np.max(c*xs,axis=1)+np.max(s*ys,axis=1)
+    side_lo=np.maximum(np.min(-s*xs,axis=1)+np.min(c*ys,axis=1),lateral-2.)
+    side_hi=np.minimum(np.max(-s*xs,axis=1)+np.max(c*ys,axis=1),lateral+2.)
+    result=[]
+    for at in longitudinal:
+        mask=(along_lo<=at)&(at<=along_hi)&(side_lo<=side_hi)
+        merged=[]
+        for lo,hi in sorted(zip(side_lo[mask],side_hi[mask])):
+            if merged and lo<=merged[-1][1]:
+                merged[-1]=(merged[-1][0],max(hi,merged[-1][1]))
+            else:merged.append((float(lo),float(hi)))
+        result.append(merged)
+    return result
+
+
 def detect(state,obstacles,cfg,locked=None,allow_side_openings=True):
     """First release: axis-aligned straight wall pairs in the known static map.
     Unsupported directions, openings and nonparallel pairs are refused explicitly.
@@ -35,21 +72,26 @@ def detect(state,obstacles,cfg,locked=None,allow_side_openings=True):
     c,s=math.cos(heading),math.sin(heading)
     at=(state.x-origin[0])*c+(state.y-origin[1])*s
     lateral=-(state.x-origin[0])*s+(state.y-origin[1])*c
-    shapes=[getattr(o,'native',None) or Polygon(o) for o in obstacles]
-    union=shapely.union_all(shapes) if shapes else Polygon()
+    longitudinal_samples=[at+i*.1 for i in range(-5,31)]
+    rectangular=rectangle_sections(obstacles,origin,heading,longitudinal_samples,lateral)
+    if rectangular is None:
+        shapes=[getattr(o,'native',None) or Polygon(o) for o in obstacles]
+        union=shapely.union_all(shapes) if shapes else Polygon()
     sections=[];cross_sections=[]
     # Scan from behind the front axle to the complete lookahead limit.
-    for i in range(-5,31):
-        longitudinal=at+i*.1
-        x=origin[0]+c*longitudinal-s*lateral;y=origin[1]+s*longitudinal+c*lateral
-        hit=union.intersection(LineString([(x+s*2,y-c*2),(x-s*2,y+c*2)]))
-        intervals=[]
-        geoms=list(hit.geoms) if hasattr(hit,'geoms') else [hit]
-        for g in geoms:
-            if g.is_empty:continue
-            if not hasattr(g,'coords'):continue
-            values=[-(px-origin[0])*s+(py-origin[1])*c for px,py in g.coords]
-            if values:intervals.append((min(values),max(values)))
+    for index,longitudinal in enumerate(longitudinal_samples):
+        if rectangular is not None:
+            intervals=rectangular[index]
+        else:
+            x=origin[0]+c*longitudinal-s*lateral;y=origin[1]+s*longitudinal+c*lateral
+            hit=union.intersection(LineString([(x+s*2,y-c*2),(x-s*2,y+c*2)]))
+            intervals=[]
+            geoms=list(hit.geoms) if hasattr(hit,'geoms') else [hit]
+            for g in geoms:
+                if g.is_empty:continue
+                if not hasattr(g,'coords'):continue
+                values=[-(px-origin[0])*s+(py-origin[1])*c for px,py in g.coords]
+                if values:intervals.append((min(values),max(values)))
         left=min((a for a,b in intervals if a>lateral+1e-6),default=None)
         right=max((b for a,b in intervals if b<lateral-1e-6),default=None)
         occupied=any(a-1e-6<=lateral<=b+1e-6 for a,b in intervals)

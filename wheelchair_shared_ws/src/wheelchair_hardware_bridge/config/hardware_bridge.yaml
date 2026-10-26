@@ -1,0 +1,55 @@
+cloud_to_scan:
+  ros__parameters:
+    # BodyCloudFilter owns the measured full-body mask before 2D projection.
+    right_cloud_topic: /mid360_201/points_filtered
+    left_cloud_topic: /mid360_202/points_filtered
+    # Inverted sensor origin is 0.356 m above ground and at Z=-0.100 m
+    # in base_link: floor Z = -0.100 - 0.356 = -0.456 m.
+    # TF already applies roll=180 deg. Never flip the points again.
+    # Single-frame, per-sensor clusters within base_link XY radius 1 m.
+    # 5 cm 3D connectivity; clusters with fewer than 4 points are suppressed.
+    cluster_filter_enabled: true
+    ground_filter_enabled: true
+    ground_z: -0.456
+    # Ground band is +/-8 cm; obstacles within this band are classified as ground.
+    ground_tolerance: 0.08
+    obstacle_height: 0.90
+    # Legacy slice is used ONLY when ground_filter_enabled=false.
+    height_min: -0.203
+    height_max: 0.397
+    range_min: 0.15
+    # Must exceed the 5 m local map half-width: returns beyond range_max are
+    # dropped, so open space past it would leave the front unknown.
+    range_max: 20.0
+    angle_min: -3.14159265
+    angle_max:  3.14159265
+    angular_resolution: 0.5   # degrees per bin
+    cloud_sync_window: 0.3    # seconds; accept clouds up to this age
+    target_frame: base_link
+
+odom_relay:
+  ros__parameters:
+    source_topic: /odin1/odometry_highfreq
+    target_topic: /wheelchair/odom
+    child_frame_id: base_link
+    imu_source_topic: /odin1/imu
+    imu_target_topic: /wheelchair/imu
+
+twist_to_key:
+  ros__parameters:
+    source_topic: /wheelchair/sim/drive
+    target_topic: /whill/controller/navigation
+    linear_threshold: 0.05    # m/s  — below this → stop
+    angular_threshold: 0.05   # rad/s
+
+scan_map:
+  ros__parameters:
+    # Matches the Nav2 costmap and discrete planner (0.05 m).
+    resolution: 0.05
+    size: 10.0
+    max_age: 0.3
+    # Fuse scans within this window (MID360 non-repetitive coverage).
+    history_window: 0.25
+    # Unobservable ring beside/behind the chassis treated as free (m); 0 disables.
+    # The front is never cleared and must be proven free by returns.
+    blind_band: 0.10

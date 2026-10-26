@@ -1,4 +1,4 @@
-"""Attach read-only RViz diagnostics to an existing wheelchair simulation."""
+"""Attach read-only RViz diagnostics to an existing wheelchair stack."""
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, EmitEvent, RegisterEventHandler
 from launch.event_handlers import OnProcessExit
@@ -12,9 +12,10 @@ def generate_launch_description():
     config=get_package_share_directory('wheelchair_control')+'/config/navigation_debug.rviz'
     params=[{'use_sim_time':LaunchConfiguration('use_sim_time')}]
     monitor=Node(package='wheelchair_control',executable='navigation_debug',parameters=params,output='screen')
-    rviz=Node(package='rviz2',executable='rviz2',arguments=['-d',config],parameters=params,output='screen')
+    rviz=Node(package='rviz2',executable='rviz2',arguments=['-d',LaunchConfiguration('rviz_config')],parameters=params,output='screen')
     return LaunchDescription([
-        DeclareLaunchArgument('use_sim_time',default_value='true'),monitor,rviz,
+        DeclareLaunchArgument('use_sim_time',default_value='true'),
+        DeclareLaunchArgument('rviz_config',default_value=config),monitor,rviz,
         RegisterEventHandler(OnProcessExit(target_action=rviz,on_exit=[EmitEvent(event=Shutdown(reason='RViz closed'))])),
         RegisterEventHandler(OnProcessExit(target_action=monitor,on_exit=[EmitEvent(event=Shutdown(reason='Diagnostic monitor exited'))])),
     ])

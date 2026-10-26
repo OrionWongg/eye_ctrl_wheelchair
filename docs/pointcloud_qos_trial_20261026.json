@@ -1,0 +1,306 @@
+{
+  "sample_duration_s": 25,
+  "domain": "92",
+  "actuator_nodes_started": false,
+  "topics": {
+    "/mid360_201/points": {
+      "count": 247,
+      "hz": 9.88,
+      "age_ms": {
+        "p50": 102.113504,
+        "p95": 104.87922669999999,
+        "max": 109.088817
+      },
+      "gap_ms": {
+        "p50": 100.0441799969849,
+        "p95": 102.39369150167477,
+        "max": 201.9444020006631
+      },
+      "publishers": [
+        {
+          "node": "dual_mid360_driver",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ],
+      "subscribers": [
+        {
+          "node": "readonly_best_effort_trial",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        },
+        {
+          "node": "body_cloud_filter",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        },
+        {
+          "node": "rviz_stream_watchdog",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ]
+    },
+    "/mid360_201/points_filtered": {
+      "count": 240,
+      "hz": 9.6,
+      "age_ms": {
+        "p50": 139.8799335,
+        "p95": 141.9223613,
+        "max": 150.248095
+      },
+      "gap_ms": {
+        "p50": 100.04928600028506,
+        "p95": 102.88179769850103,
+        "max": 210.47874499708996
+      },
+      "publishers": [
+        {
+          "node": "body_cloud_filter",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ],
+      "subscribers": [
+        {
+          "node": "readonly_best_effort_trial",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        },
+        {
+          "node": "cloud_to_scan",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        },
+        {
+          "node": "rviz_stream_watchdog",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ]
+    },
+    "/mid360_202/points": {
+      "count": 242,
+      "hz": 9.68,
+      "age_ms": {
+        "p50": 104.00482149999999,
+        "p95": 107.14109625,
+        "max": 111.190383
+      },
+      "gap_ms": {
+        "p50": 100.06848500052001,
+        "p95": 103.99520799910533,
+        "max": 202.3383029991237
+      },
+      "publishers": [
+        {
+          "node": "dual_mid360_driver",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ],
+      "subscribers": [
+        {
+          "node": "readonly_best_effort_trial",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        },
+        {
+          "node": "body_cloud_filter",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        },
+        {
+          "node": "rviz_stream_watchdog",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ]
+    },
+    "/mid360_202/points_filtered": {
+      "count": 239,
+      "hz": 9.56,
+      "age_ms": {
+        "p50": 180.365273,
+        "p95": 182.8419612,
+        "max": 193.245618
+      },
+      "gap_ms": {
+        "p50": 100.08046700022533,
+        "p95": 149.25418239872562,
+        "max": 214.28656200077967
+      },
+      "publishers": [
+        {
+          "node": "body_cloud_filter",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ],
+      "subscribers": [
+        {
+          "node": "readonly_best_effort_trial",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        },
+        {
+          "node": "cloud_to_scan",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        },
+        {
+          "node": "rviz_stream_watchdog",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ]
+    },
+    "/odin1/cloud_raw": {
+      "count": 219,
+      "hz": 8.76,
+      "age_ms": {
+        "p50": 3.95533,
+        "p95": 6.2342834,
+        "max": 8.309234
+      },
+      "gap_ms": {
+        "p50": 98.98528850135335,
+        "p95": 196.73093710207465,
+        "max": 398.07980099794804
+      },
+      "publishers": [
+        {
+          "node": "host_sdk_sample",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ],
+      "subscribers": [
+        {
+          "node": "readonly_best_effort_trial",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ]
+    },
+    "/odin1/cloud_slam": {
+      "count": 240,
+      "hz": 9.6,
+      "age_ms": {
+        "p50": 1.9471064999999999,
+        "p95": 3.768398099999999,
+        "max": 7.75854
+      },
+      "gap_ms": {
+        "p50": 98.78960099740652,
+        "p95": 182.63847170237565,
+        "max": 311.8714530028228
+      },
+      "publishers": [
+        {
+          "node": "host_sdk_sample",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ],
+      "subscribers": [
+        {
+          "node": "readonly_best_effort_trial",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ]
+    },
+    "/odin1/cloud_render": {
+      "count": 228,
+      "hz": 9.12,
+      "age_ms": {
+        "p50": 67.757169,
+        "p95": 109.4250838,
+        "max": 155.963308
+      },
+      "gap_ms": {
+        "p50": 100.26646100232028,
+        "p95": 201.8469016009476,
+        "max": 298.71089500011294
+      },
+      "publishers": [
+        {
+          "node": "host_sdk_sample",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ],
+      "subscribers": [
+        {
+          "node": "readonly_best_effort_trial",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ]
+    },
+    "/wheelchair/ground_points": {
+      "count": 466,
+      "hz": 18.64,
+      "age_ms": {
+        "p50": 259.75329999999997,
+        "p95": 269.006747,
+        "max": 285.207895
+      },
+      "gap_ms": {
+        "p50": 54.17686100190622,
+        "p95": 65.46201420060238,
+        "max": 216.72334100003354
+      },
+      "publishers": [
+        {
+          "node": "cloud_to_scan",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ],
+      "subscribers": [
+        {
+          "node": "readonly_best_effort_trial",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ]
+    },
+    "/wheelchair/scan": {
+      "count": 466,
+      "hz": 18.64,
+      "age_ms": {
+        "p50": 261.15756899999997,
+        "p95": 271.06285025,
+        "max": 285.943795
+      },
+      "gap_ms": {
+        "p50": 53.830253000342054,
+        "p95": 65.51819019805407,
+        "max": 212.47851999942213
+      },
+      "publishers": [
+        {
+          "node": "cloud_to_scan",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ],
+      "subscribers": [
+        {
+          "node": "readonly_best_effort_trial",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        },
+        {
+          "node": "rviz_stream_watchdog",
+          "reliability": "BEST_EFFORT",
+          "depth": 0
+        }
+      ]
+    }
+  },
+  "all_publishers_best_effort": true,
+  "all_topics_received": true
+}

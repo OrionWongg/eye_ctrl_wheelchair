@@ -69,7 +69,7 @@ def test_map_heartbeat_reuses_geometry_but_changes_are_validated():
     from wheelchair_control.protocol import StreamGuard
     now=SimpleNamespace(nanoseconds=10_000_000_000)
     node=SimpleNamespace(cfg=config(),map_guard=StreamGuard(.5),
-        map_geometry=None,core=SimpleNamespace(trip=lambda reason:None),
+        map_geometry=None,allow_dynamic_map=False,core=SimpleNamespace(trip=lambda reason:None),
         get_clock=lambda:SimpleNamespace(now=lambda:now))
     msg=ObstacleMap();msg.header.frame_id='odom';msg.header.stamp.sec=10
     msg.complete=True;msg.session_id='test';msg.sequence=1

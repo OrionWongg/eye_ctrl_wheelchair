@@ -109,7 +109,7 @@ class NavigationDebug(Node):
         else:
             text=Marker();text.header.frame_id='odom';text.ns='waiting';text.id=1000;text.type=Marker.TEXT_VIEW_FACING
             text.pose.orientation.w=1.;text.pose.position.z=1.;text.scale.z=.2
-            text.color.r=1.;text.color.g=.6;text.color.a=1.;text.text='WAITING FOR DECISION TRACE - check simulation and ROS_DOMAIN_ID'
+            text.color.r=1.;text.color.g=.6;text.color.a=1.;text.text='WAITING FOR DECISION TRACE - check hardware/control stack and ROS_DOMAIN_ID'
             output.markers.append(text)
         # Keep the last diagnostics visible when simulated time stops. The wall
         # timer updates the STALE label; old measurements are never marked live.
@@ -120,7 +120,7 @@ class NavigationDebug(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args,signal_handler_options=SignalHandlerOptions.NO)
+    rclpy.init(args=args)
     node=NavigationDebug()
     try:rclpy.spin(node)
     except (KeyboardInterrupt,rclpy.executors.ExternalShutdownException):pass

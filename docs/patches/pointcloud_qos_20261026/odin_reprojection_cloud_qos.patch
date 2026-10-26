@@ -1,0 +1,11 @@
+--- a/src/cloud_reprojection_ros.cpp
++++ b/src/cloud_reprojection_ros.cpp
+@@ -67,7 +67,7 @@
+         << "\n  wiwc_topic: " << wiwc_topic_
+         << "\n  reprojected_image_topic: " << reprojected_image_topic_);
+ 
+-    cloud_sub_.subscribe(this, cloud_slam_topic_);
++    cloud_sub_.subscribe(this, cloud_slam_topic_, rclcpp::SensorDataQoS().keep_last(1).get_rmw_qos_profile());
+     odom_sub_.subscribe(this, odometry_topic_);
+     wiwc_sub_.subscribe(this, wiwc_topic_);
+ 

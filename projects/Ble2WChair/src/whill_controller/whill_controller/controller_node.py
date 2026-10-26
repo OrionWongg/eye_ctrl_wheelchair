@@ -2,6 +2,7 @@
 """ROS 2 keyboard and serial controller for the ESP32 BLE HID mouse."""
 
 import json
+import hashlib
 import math
 import os
 import signal
@@ -10,9 +11,10 @@ import tkinter as tk
 from collections import Counter
 
 import rclpy
+from rclpy.executors import SingleThreadedExecutor
 import serial
 from ament_index_python.packages import get_package_share_directory
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, TwistStamped
 from nav_msgs.msg import Odometry, Path
 from rclpy.node import Node
 from rclpy.qos import (
@@ -38,6 +40,9 @@ COMBO_WINDOW_MS = 35
 HOLD_DELAY_MS = 250
 REPEAT_INTERVAL_MS = 20
 ROS_PUMP_INTERVAL_MS = 20
+EYE_ROS_PUMP_INTERVAL_MS = 5
+ROS_PUMP_MAX_CALLBACKS = 8
+ROS_PUMP_BUDGET_S = .005
 LOCKED_HOME_WAIT_MS = 900
 BLE_QUERY_INTERVAL_MS = 1000
 IPAD_SCREEN_STEP_COORDINATES = (45, 30)
@@ -107,6 +112,42 @@ class WhillControllerNode(Node):
         self.declare_parameter('control_mode', 'free_screen')
         self.declare_parameter('whill_mode', False)
         self.declare_parameter('hardware_enabled', True)
+        self.declare_parameter('eye_control_enabled', False)
+        self.declare_parameter('navigation_control_enabled', False)
+        self.navigation_control_enabled = bool(self.get_parameter('navigation_control_enabled').value)
+        self.declare_parameter('navigation_hold_to_run', False)
+        self.navigation_hold_to_run = bool(self.get_parameter('navigation_hold_to_run').value)
+        self.navigation_keys_held = set()
+        self.navigation_keys_suppressed = set()
+        self.navigation_hold_job = None
+        self.physical_keyboard = None
+        if self.navigation_control_enabled and self.navigation_hold_to_run:
+            from whill_controller.physical_keyboard import PhysicalKeyboard
+            self.physical_keyboard = PhysicalKeyboard()
+        self.navigation_received_at = None
+        self.navigation_stamp = 0
+        self.navigation_target = None
+        self.declare_parameter('keyboard_auto_drag', False)
+        self.keyboard_auto_drag = bool(
+            self.get_parameter('keyboard_auto_drag').value)
+        self.declare_parameter('unified_ui', False)
+        self.unified_ui = bool(self.get_parameter('unified_ui').value)
+        self.last_ui_command_stamp = 0
+        self.eye_control_enabled = bool(
+            self.get_parameter('eye_control_enabled').value)
+        if self.navigation_control_enabled and self.eye_control_enabled:
+            raise ValueError('Navigation and direct eye control are mutually exclusive')
+        if self.navigation_control_enabled and not self.keyboard_auto_drag:
+            raise ValueError('Navigation requires keyboard_auto_drag')
+        # Simulation spins continuously. Give the iPad input similar headroom
+        # while retaining Tk ownership of all serial/UI operations.
+        self.ros_pump_interval_ms = (EYE_ROS_PUMP_INTERVAL_MS
+                                     if self.eye_control_enabled else ROS_PUMP_INTERVAL_MS)
+        self.eye_drive = None
+        self.eye_target = None
+        if self.eye_control_enabled:
+            from whill_controller.eye_drive import EyeDrive
+            self.eye_drive = EyeDrive()
         self.declare_parameter('forward_speed_mps', FORWARD_SPEED_MPS)
         self.declare_parameter('backward_speed_mps', BACKWARD_SPEED_MPS)
         self.declare_parameter('left_turn_rate_radps', LEFT_TURN_RATE_RADPS)
@@ -148,12 +189,20 @@ class WhillControllerNode(Node):
             self.calibration_file = os.path.join(
                 get_package_share_directory('whill_controller'),
                 'config',
-                'default_calibration.json',
+                'ipad_calibration_20261009.json',
             )
         self.calibration_origin = 'unknown'
         self.calibration_sequences = {}
         self.calibration_coordinates = {}
+        with open(self.calibration_file, 'rb') as calibration_input:
+            self.calibration_sha256 = hashlib.sha256(calibration_input.read()).hexdigest()
+        self.get_logger().info(
+            f'iPad calibration: {self.calibration_file} SHA256={self.calibration_sha256}')
         self._load_calibration_points()
+        if self.eye_control_enabled and (
+                not self.whill_mode or
+                set(LOCKED_TARGET_NAMES.values()) - set(self.calibration_coordinates)):
+            raise ValueError('Eye control requires APP mode and all nine calibration points')
 
         status_qos = QoSProfile(
             history=HistoryPolicy.KEEP_LAST,
@@ -185,6 +234,19 @@ class WhillControllerNode(Node):
             self.on_ros_command,
             log_qos,
         )
+        if self.navigation_control_enabled:
+            self.navigation_key_pub = self.create_publisher(
+                String, '/wheelchair/keyboard/gui_key', 10)
+            self.navigation_sub = self.create_subscription(
+                TwistStamped, '/whill/controller/navigation', self.on_navigation_command, 1)
+        if self.eye_control_enabled:
+            if self.unified_ui:
+                self.ui_sub = self.create_subscription(
+                    String, '/whill/controller/ui', self.on_ui_command, 1)
+            self.eye_feedback = self.create_publisher(String, '/eye_control/feedback', 1)
+            self.eye_feedback_timer = self.create_timer(.1, self.publish_eye_feedback)
+            self.eye_sub = self.create_subscription(
+                String, '/eye_tracking/fusion_samples', self.on_eye_sample, 1)
         self.status_timer = self.create_timer(1.0, self.publish_status)
         self.motion_timer = self.create_timer(0.05, self.update_motion)
 
@@ -227,9 +289,13 @@ class WhillControllerNode(Node):
             self._open_serial()
 
         self.root = tk.Tk()
+        if self.unified_ui:
+            self.root.withdraw()
         self._configure_window()
         self._publish_path()
-        self.root.after(ROS_PUMP_INTERVAL_MS, self._pump_ros)
+        self.ros_executor = SingleThreadedExecutor(context=self.context)
+        self.ros_executor.add_node(self)
+        self.ros_pump_job = self.root.after(self.ros_pump_interval_ms, self._pump_ros)
         if self.whill_mode:
             self.root.after(1200, self.request_locked_initialization)
 
@@ -282,9 +348,9 @@ class WhillControllerNode(Node):
                 f'calibration points from {self.calibration_origin}')
 
     def _configure_window(self):
-        self.root.title('WHILL Control and 2D Trajectory')
-        self.root.geometry('1320x820')
-        self.root.minsize(1100, 700)
+        self.root.title('WHILL Control')
+        self.root.geometry('520x430')
+        self.root.minsize(460, 380)
         self.root.configure(bg='#18202a')
         self.root.protocol('WM_DELETE_WINDOW', self.close)
 
@@ -293,81 +359,21 @@ class WhillControllerNode(Node):
         self.title_label = tk.Label(
             self.root,
             text=title_text,
-            font=('Sans', 20, 'bold'),
+            font=('Sans', 16, 'bold'),
             fg='white',
             bg='#18202a',
         )
-        self.title_label.pack(pady=(14, 8))
+        self.title_label.pack(pady=(12, 8))
 
-        content = tk.Frame(self.root, bg='#18202a')
-        content.pack(fill='both', expand=True, padx=14, pady=(0, 14))
-
-        trajectory_panel = tk.Frame(content, bg='#111923')
-        trajectory_panel.pack(
-            side='left', fill='both', expand=True, padx=(0, 12))
-        tk.Label(
-            trajectory_panel,
-            text='Estimated Wheelchair Trajectory',
-            font=('Sans', 14, 'bold'),
-            fg='#d9e6f2',
-            bg='#111923',
-        ).pack(pady=(10, 6))
-        self.trajectory_canvas = tk.Canvas(
-            trajectory_panel,
-            bg='#080d13',
-            highlightthickness=0,
-        )
-        self.trajectory_canvas.pack(
-            fill='both', expand=True, padx=10, pady=(0, 8))
-        self.trajectory_canvas.bind(
-            '<Configure>', lambda _event: self._draw_trajectory())
-        trajectory_controls = tk.Frame(trajectory_panel, bg='#111923')
-        trajectory_controls.pack(fill='x', padx=10, pady=(0, 10))
-        self.arm_button_text = tk.StringVar(
-            value='Arm Keyboard Control')
-        self.arm_button = tk.Button(
-            trajectory_controls,
-            textvariable=self.arm_button_text,
-            command=self.toggle_keyboard_arm,
-            font=('Sans', 10, 'bold'),
-            bg='#8b2f3c',
-            fg='white',
-            activebackground='#a63b4a',
-            activeforeground='white',
-            padx=14,
-            pady=6,
-        )
-        self.arm_button.pack(side='left', padx=(0, 8))
-        tk.Button(
-            trajectory_controls,
-            text='Reset Trajectory Origin',
-            command=self.reset_trajectory,
-            font=('Sans', 10, 'bold'),
-            padx=14,
-            pady=6,
-        ).pack(side='left')
-        tk.Label(
-            trajectory_controls,
-            text='Origin: startup pose (0, 0, 0°) · +X forward · +Y left',
-            font=('Sans', 10),
-            fg='#9fb3c8',
-            bg='#111923',
-        ).pack(side='right')
-
-        information_panel = tk.Frame(content, bg='#18202a', width=410)
-        information_panel.pack(side='right', fill='y')
-        information_panel.pack_propagate(False)
+        panel = tk.Frame(self.root, bg='#18202a')
+        panel.pack(fill='both', expand=True, padx=14, pady=(0, 12))
 
         self.mode_text = tk.StringVar()
         self.connection_text = tk.StringVar()
-        self.pose_text = tk.StringVar()
-        self.velocity_text = tk.StringVar()
-        self.tracking_text = tk.StringVar()
-        self.counts_text = tk.StringVar()
         self.last_command_text = tk.StringVar()
 
         def add_information_row(title, variable, color='#d9e6f2'):
-            frame = tk.Frame(information_panel, bg='#111923')
+            frame = tk.Frame(panel, bg='#111923')
             frame.pack(fill='x', pady=(0, 8))
             tk.Label(
                 frame,
@@ -376,37 +382,21 @@ class WhillControllerNode(Node):
                 font=('Sans', 10, 'bold'),
                 fg='#79b8ff',
                 bg='#111923',
-            ).pack(fill='x', padx=12, pady=(8, 2))
+            ).pack(fill='x', padx=12, pady=(6, 2))
             tk.Label(
                 frame,
                 textvariable=variable,
                 anchor='w',
                 justify='left',
-                wraplength=375,
+                wraplength=470,
                 font=('Monospace', 10, 'bold'),
                 fg=color,
                 bg='#111923',
-            ).pack(fill='x', padx=12, pady=(0, 8))
+            ).pack(fill='x', padx=12, pady=(0, 6))
 
-        add_information_row('MODE AND TRACKING', self.mode_text)
         add_information_row('CONNECTION', self.connection_text, '#62d6a7')
-        add_information_row('ESTIMATED POSE', self.pose_text, '#ffffff')
-        add_information_row('CALIBRATED VELOCITY', self.velocity_text)
-        add_information_row('LIVE MOTION STATE', self.tracking_text, '#f5c96b')
-        add_information_row('KEY PRESS TOTALS', self.counts_text)
-        add_information_row('LAST ESP32 COMMAND', self.last_command_text)
-
-        self.instructions_label = tk.Label(
-            information_panel,
-            text=self._instructions(),
-            justify='left',
-            anchor='w',
-            wraplength=390,
-            font=('Sans', 10),
-            fg='#d9e6f2',
-            bg='#18202a',
-        )
-        self.instructions_label.pack(fill='x', pady=(2, 8))
+        add_information_row('CONTROL', self.mode_text)
+        add_information_row('LAST COMMAND', self.last_command_text)
 
         initial_state = (
             f'Connected to {self.port} · pointer idle'
@@ -415,47 +405,65 @@ class WhillControllerNode(Node):
         self.status = tk.StringVar(value=initial_state)
         self.display_text = initial_state
         tk.Label(
-            information_panel,
+            panel,
             textvariable=self.status,
             justify='left',
             anchor='w',
-            wraplength=390,
+            wraplength=480,
             font=('Sans', 10, 'bold'),
-            fg='#62d6a7',
-            bg='#18202a',
-        ).pack(fill='x', pady=(0, 8))
-
-        self.timing = tk.StringVar(
-            value='Key timing: waiting for input')
-        tk.Label(
-            information_panel,
-            textvariable=self.timing,
-            justify='left',
-            anchor='w',
-            wraplength=390,
-            font=('Monospace', 9, 'bold'),
             fg='#f5c96b',
             bg='#18202a',
         ).pack(fill='x', pady=(0, 8))
 
+        self.arm_button_text = tk.StringVar(
+            value='Arm Eye Control' if self.eye_control_enabled
+            else 'Arm Keyboard Control')
+        self.arm_button = tk.Button(
+            panel,
+            textvariable=self.arm_button_text,
+            command=self.toggle_keyboard_arm,
+            font=('Sans', 12, 'bold'),
+            bg='#8b2f3c',
+            fg='white',
+            activebackground='#a63b4a',
+            activeforeground='white',
+            padx=14,
+            pady=8,
+        )
+        self.arm_button.pack(fill='x', pady=(0, 8))
+
+        self.instructions_label = tk.Label(
+            panel,
+            text=self._instructions(),
+            justify='left',
+            anchor='w',
+            wraplength=480,
+            font=('Sans', 9),
+            fg='#9fb3c8',
+            bg='#18202a',
+        )
+        self.instructions_label.pack(fill='x')
+
+        # Key timing stays in the log and event stream, not the window.
+        self.timing = tk.StringVar()
+
         self.root.bind_all('<KeyPress>', self.on_key_press)
         self.root.bind_all('<KeyRelease>', self.on_key_release)
+        self.root.bind('<FocusOut>', self.on_navigation_focus_out)
+        if self.navigation_control_enabled and self.navigation_hold_to_run:
+            self.navigation_hold_job = self.root.after(50, self.navigation_hold_tick)
         self._refresh_dashboard()
 
     def _refresh_dashboard(self):
-        """Refresh all dashboard text and redraw the trajectory canvas."""
-        if not hasattr(self, 'mode_text'):
+        """Refresh connection, arm state and last command."""
+        # The unified eye guide uses ROS feedback; this dashboard is hidden.
+        if self.unified_ui or not hasattr(self, 'mode_text'):
             return
-        state = self.motion_state
         mode_name = (
             'APP LOCKED' if self.control_mode == 'app_locked'
             else 'FREE SCREEN')
         arm_state = 'ARMED' if self.keyboard_armed else 'DISARMED'
-        hold_rule = (
-            'requires F button hold'
-            if self.odometry_requires_button_hold else 'follows direction keys')
-        self.mode_text.set(
-            f'{mode_name} · keyboard {arm_state}\nOdometry {hold_rule}')
+        self.mode_text.set(f'{arm_state} · {mode_name}')
 
         serial_state = 'connected' if (
             self.serial_device and self.serial_device.is_open) else 'offline'
@@ -466,120 +474,45 @@ class WhillControllerNode(Node):
         }[self.bluetooth_connected]
         self.connection_text.set(
             f'Serial: {serial_state} ({self.port})\nBluetooth: {ble_state}')
-        self.pose_text.set(
-            f'X: {state.x:+.3f} m\nY: {state.y:+.3f} m\n'
-            f'Yaw: {math.degrees(state.yaw):+.2f}°')
-        self.velocity_text.set(
-            f'W forward: {self.motion_model.forward_speed:.4f} m/s\n'
-            f'S backward: {self.motion_model.backward_speed:.4f} m/s\n'
-            f'A left turn: {math.degrees(self.motion_model.left_turn_rate):.3f}°/s\n'
-            f'D right turn: {math.degrees(self.motion_model.right_turn_rate):.3f}°/s')
-        tracking = 'ACTIVE' if self.motion_tracking_active else 'STANDBY'
-        self.tracking_text.set(
-            f'{tracking}\nKeys: {sorted(self.keys_down & self.movement_keys)}\n'
-            f'Linear: {state.linear_velocity:+.4f} m/s\n'
-            f'Angular: {math.degrees(state.angular_velocity):+.3f}°/s')
-        free_total = sum(self.key_press_counts_by_mode['free_screen'].values())
-        app_total = sum(self.key_press_counts_by_mode['app_locked'].values())
-        cardinal_counts = '  '.join(
-            f'{key.upper()}={self.key_press_counts[key]}'
-            for key in ('w', 'a', 's', 'd'))
-        self.counts_text.set(
-            f'All modes: {sum(self.key_press_counts.values())}\n'
-            f'Free screen: {free_total}  APP locked: {app_total}\n'
-            f'{cardinal_counts}')
         if self.last_command:
             self.last_command_text.set(
                 f'#{self.last_command["sequence"]} '
-                f'{self.last_command["action"]}\n'
-                f'Payload: {self.last_command["payload_ascii"]!r}')
+                f'{self.last_command["action"]}')
         else:
             self.last_command_text.set('No command sent')
-        self._draw_trajectory()
-
-    def _draw_trajectory(self):
-        """Render an auto-scaled XY path and the current wheelchair heading."""
-        if not hasattr(self, 'trajectory_canvas'):
-            return
-        canvas = self.trajectory_canvas
-        width = max(canvas.winfo_width(), 640)
-        height = max(canvas.winfo_height(), 520)
-        canvas.delete('all')
-
-        points = self.motion_path or [(0.0, 0.0, 0.0)]
-        extent = max(
-            1.0,
-            max(max(abs(x), abs(y)) for x, y, _yaw in points) * 1.2,
-        )
-        margin = 55
-        scale = min(
-            (width - 2 * margin) / (2 * extent),
-            (height - 2 * margin) / (2 * extent),
-        )
-        center_x = width / 2.0
-        center_y = height / 2.0
-
-        def screen_point(x, y):
-            return center_x + x * scale, center_y - y * scale
-
-        grid_step = 0.5 if extent <= 3.0 else 1.0
-        grid_limit = int(math.ceil(extent / grid_step))
-        for index in range(-grid_limit, grid_limit + 1):
-            value = index * grid_step
-            sx, _ = screen_point(value, 0.0)
-            _, sy = screen_point(0.0, value)
-            canvas.create_line(
-                sx, margin, sx, height - margin, fill='#162332')
-            canvas.create_line(
-                margin, sy, width - margin, sy, fill='#162332')
-
-        canvas.create_line(
-            margin, center_y, width - margin, center_y,
-            fill='#496780', width=2, arrow='last')
-        canvas.create_line(
-            center_x, height - margin, center_x, margin,
-            fill='#496780', width=2, arrow='last')
-        canvas.create_text(
-            width - margin - 10, center_y - 16, text='+X forward',
-            fill='#9fb3c8', anchor='e', font=('Sans', 9, 'bold'))
-        canvas.create_text(
-            center_x + 12, margin + 8, text='+Y left',
-            fill='#9fb3c8', anchor='nw', font=('Sans', 9, 'bold'))
-
-        flattened = []
-        for x, y, _yaw in points:
-            flattened.extend(screen_point(x, y))
-        if len(flattened) >= 4:
-            canvas.create_line(
-                *flattened, fill='#37d5ff', width=3)
-
-        origin_x, origin_y = screen_point(0.0, 0.0)
-        canvas.create_oval(
-            origin_x - 6, origin_y - 6, origin_x + 6, origin_y + 6,
-            fill='#62d6a7', outline='')
-        state = self.motion_state
-        vehicle_x, vehicle_y = screen_point(state.x, state.y)
-        heading_length = 32
-        heading_x = vehicle_x + heading_length * math.cos(state.yaw)
-        heading_y = vehicle_y - heading_length * math.sin(state.yaw)
-        canvas.create_oval(
-            vehicle_x - 8, vehicle_y - 8, vehicle_x + 8, vehicle_y + 8,
-            fill='#ffb347', outline='#ffffff', width=2)
-        canvas.create_line(
-            vehicle_x, vehicle_y, heading_x, heading_y,
-            fill='#ff6b6b', width=4, arrow='last')
-        canvas.create_text(
-            margin, 20,
-            text=f'Auto scale: ±{extent:.1f} m · path points: {len(points)}',
-            fill='#9fb3c8', anchor='w', font=('Monospace', 9))
 
     def _instructions(self):
+        if self.navigation_control_enabled and self.navigation_hold_to_run:
+            return ('目标点导航：等待居中后点击 Arm Keyboard Control。\n'
+                    '按住 W 前进；按住 A/D/U 转向或选择方向；松键即停。\n'
+                    'C 取消方向偏好；空格/S 停止；切出窗口也会停止。\n'
+                    '终端仅用于停止和退出；故障后松键，再重新按下。')
+        if self.navigation_control_enabled:
+            return ('NAVIGATION → calibrated iPad keyboard drag\n'
+                    'Wait for APP centering, then click Arm Keyboard Control.\n'
+                    'Use W/A/D/U/C here or in the terminal; Space/S stops.\n'
+                    'W resumes; A/D turns or prefers a direction; U turns around.\n'
+                    'Disarm / Esc stops; lost commands release and disarm.')
+        if self.eye_control_enabled:
+            return (
+                'EYE CONTROL · calibrated iPad targets\n'
+                'Arm Eye Control, then double blink to start\n'
+                'Look left/right: one-second turn · center: forward\n'
+                'Closed eyes or lost tracking: release and stop\n'
+                'Single blink: resume · Disarm or Esc: stop\n'
+                'Dry run sends no commands to the ESP32.'
+                if not self.hardware_enabled else
+                'EYE CONTROL · double blink to start · gaze to turn\n'
+                'Closed eyes: stop · single blink: resume\n'
+                'Disarm or Esc: stop')
         if self.whill_mode:
             return (
                 'APP LOCKED MODE\n'
                 'W/S: forward/backward · A/D: left/right turn\n'
-                'Z/X/C/V: combined diagonal targets\n'
-                'F: start/stop sustained control\n'
+                'Z/X/C/V: combined diagonal targets\n' +
+                ('Hold direction: drag · release: stop (F/Enter disabled)\n'
+                 if self.keyboard_auto_drag else
+                 'F: start/stop sustained control\n') +
                 'R: re-center pointer · O: free-screen mode\n'
                 'Click this window before using control keys.\n'
                 'Trajectory updates only during active sustained control.')
@@ -598,8 +531,126 @@ class WhillControllerNode(Node):
             self.close()
             return
         self._drain_serial_output()
-        rclpy.spin_once(self, timeout_sec=0.0)
-        self.root.after(ROS_PUMP_INTERVAL_MS, self._pump_ros)
+        # spin_once executes only ONE callback. Telemetry timers (31 Hz)
+        # consumed most of the original 50 Hz pump and starved eye input.
+        # Keep callbacks on the Tk owner thread, but service a bounded batch
+        # before checking frame age. Both limits preserve GUI/watchdog turns.
+        deadline = time.monotonic() + ROS_PUMP_BUDGET_S
+        for _ in range(ROS_PUMP_MAX_CALLBACKS):
+            self.ros_executor.spin_once(timeout_sec=0.0)
+            if self.closing or not rclpy.ok():
+                return
+            if time.monotonic() >= deadline:
+                break
+        self.update_eye_drive()
+        self.update_navigation_drive()
+        self.ros_pump_job = self.root.after(self.ros_pump_interval_ms, self._pump_ros)
+
+    def on_ui_command(self, message):
+        """Apply fresh explicit arm/stop actions from the combined window."""
+        try:
+            command = json.loads(message.data)
+            action, stamp = command['action'], command['stamp_ns']
+            if action == 'stop':
+                self.last_ui_command_stamp = self.get_clock().now().nanoseconds
+                if self.keyboard_armed:
+                    self.toggle_keyboard_arm()
+                self.update_eye_drive()
+                return
+            age = (self.get_clock().now().nanoseconds - stamp) / 1e9
+            if (action != 'arm' or type(stamp) is not int
+                    or not 0 <= age < .5 or stamp <= self.last_ui_command_stamp):
+                return
+            self.last_ui_command_stamp = stamp
+            if self.eye_blockers() == ['IPAD_NOT_ARMED']:
+                self.toggle_keyboard_arm()
+        except (ValueError, TypeError, KeyError):
+            self.get_logger().warning('Ignored malformed combined UI command')
+
+    def eye_blockers(self):
+        """Expose each unmet condition instead of a generic not-ready state."""
+        blockers = []
+        if not self.keyboard_armed:
+            blockers.append('IPAD_NOT_ARMED')
+        if self.control_mode != 'app_locked':
+            blockers.append('IPAD_APP_MODE_REQUIRED')
+        if self.hardware_enabled and self.bluetooth_connected is not True:
+            blockers.append('IPAD_BLE_NOT_CONNECTED')
+        if self.calibrating or self.locked_current_coordinates is None:
+            blockers.append('IPAD_HOMING_NOT_READY')
+        return blockers
+
+    def publish_eye_feedback(self):
+        """Update the same fusion guide used by the simulation launcher."""
+        fusion = self.eye_drive.fusion
+        self.eye_feedback.publish(String(data=json.dumps(dict(
+            target='wheelchair', state=fusion.state, reason=fusion.reason,
+            blink_count=len(fusion.blinks), event_decision=fusion.event_decision,
+            backend='ipad', hardware_enabled=self.hardware_enabled,
+            blockers=self.eye_blockers(), armed=self.keyboard_armed,
+            bluetooth_connected=self.bluetooth_connected,
+            calibrating=self.calibrating, serial_port=self.port,
+            calibration_file=self.calibration_file,
+            calibration_sha256=self.calibration_sha256,
+            center_sequence=self.calibration_sequences.get('steering wheel center', ''),
+            pointer_coordinate=self.locked_current_coordinates,
+            left_button_held=self.click_held,
+            input_timing=self.eye_drive.timing(time.monotonic())))))
+
+    def on_eye_sample(self, message):
+        """Consume one atomic eye sample on the GUI/ROS owner thread."""
+        self.update_eye_drive(message.data)
+
+    def update_eye_drive(self, payload=None):
+        """Expire motion even if the eye publisher stops sending messages."""
+        if self.eye_drive is None:
+            return
+        blockers = self.eye_blockers()
+        if blockers != getattr(self, '_last_eye_blockers', None):
+            self._last_eye_blockers = blockers
+            self.get_logger().info('Eye input gate: ' + (', '.join(blockers) or 'READY'))
+        target = self.eye_drive.update(
+            time.monotonic(), not blockers, payload,
+            time.time(),  # Same source timestamp comparison as simulation.
+            blocked_reason=blockers[0] if blockers else 'IPAD_NOT_READY')
+        fusion = self.eye_drive.fusion
+        diagnostic = (fusion.state, fusion.reason, fusion.event_id, target)
+        if diagnostic != getattr(self, '_last_eye_diagnostic', None):
+            self._last_eye_diagnostic = diagnostic
+            self.get_logger().info('IPAD_EYE_DRIVE ' + json.dumps(dict(
+                state=fusion.state, reason=fusion.reason, target=target,
+                source_session=fusion.session, blink_id=fusion.event_id,
+                event_decision=fusion.event_decision,
+                decision=fusion.decision_details,
+                **self.eye_drive.timing(time.monotonic()))))
+        if target == self.eye_target:
+            return
+        # Release before changing direction, then approach center before a new drag.
+        if self.click_held:
+            if not self._write_command(b']', action='eye_button_release'):
+                self.keyboard_armed = False
+                return
+            self.click_held = False
+        self.keys_down.clear()
+        self.eye_target = None
+        if not self.move_locked_to_active_target():
+            self.keyboard_armed = False
+            return
+        if target is None:
+            return
+        if not self._write_command(b'[', action='eye_button_hold'):
+            self.keyboard_armed = False
+            return
+        self.click_held = True
+        self.keys_down.add(target)
+        if not self.move_locked_to_active_target():
+            self._write_command(b']', action='eye_move_failed_release')
+            self.click_held = False
+            self.keys_down.clear()
+            self.keyboard_armed = False
+            return
+        self.eye_target = target
+        self.publish_event('eye_target', key=target)
 
     def _motion_is_enabled(self):
         """Return whether keyboard input should update wheelchair odometry."""
@@ -710,15 +761,24 @@ class WhillControllerNode(Node):
     def toggle_keyboard_arm(self):
         """Arm keyboard control or return immediately to a safe idle state."""
         self.keyboard_armed = not self.keyboard_armed
+        if self.eye_drive is not None:
+            self.eye_drive.update(time.monotonic(), False)
         if self.keyboard_armed:
-            self.arm_button_text.set('Disarm Keyboard Control')
+            self.arm_button_text.set('Disarm Eye Control' if self.eye_control_enabled
+                                     else 'Disarm Keyboard Control')
             self.arm_button.configure(bg='#1f7a4d', activebackground='#299c64')
             self._set_display(
-                'Keyboard control ARMED · W/A/S/D commands are active')
+                ('Eye control ARMED · double blink to start' if self.eye_control_enabled
+                 else 'Keyboard control ARMED · W/A/S/D commands are active'))
             self.publish_event('keyboard_control_armed', armed=True)
             self.root.focus_set()
             self._refresh_dashboard()
             return
+
+        if self.navigation_control_enabled:
+            self.navigation_keys_suppressed.update(self.navigation_keys_held)
+            self.navigation_keys_held.clear()
+            self.publish_navigation_key('s')
 
         for job_name in ('initial_job', 'repeat_job', 'hold_job'):
             job = getattr(self, job_name)
@@ -731,7 +791,8 @@ class WhillControllerNode(Node):
         if self.click_held:
             self._write_command(b']', action='keyboard_disarm_button_release')
             self.click_held = False
-        self.arm_button_text.set('Arm Keyboard Control')
+        self.arm_button_text.set('Arm Eye Control' if self.eye_control_enabled
+                                 else 'Arm Keyboard Control')
         self.arm_button.configure(bg='#8b2f3c', activebackground='#a63b4a')
         self._set_display(
             'Keyboard control DISARMED · movement and button hold stopped')
@@ -765,6 +826,10 @@ class WhillControllerNode(Node):
             ('CONNECT' in line and not disconnected))
         if disconnected:
             self.bluetooth_connected = False
+            self._refresh_dashboard()
+            self.locked_init_generation += 1
+            if self.eye_drive is not None:
+                self.eye_drive.update(time.monotonic(), False)
             self.publish_event(
                 'bluetooth_state', connected=False, serial_line=line)
             if self.control_mode == 'app_locked':
@@ -778,6 +843,7 @@ class WhillControllerNode(Node):
         if connected:
             was_connected = self.bluetooth_connected
             self.bluetooth_connected = True
+            self._refresh_dashboard()
             self.publish_event(
                 'bluetooth_state', connected=True, serial_line=line)
             if self.ble_query_job is not None:
@@ -840,6 +906,7 @@ class WhillControllerNode(Node):
         message.data = json.dumps(
             command_record, ensure_ascii=False, separators=(',', ':'))
         self.command_pub.publish(message)
+        self._refresh_dashboard()
         if not self.hardware_enabled:
             return True
         try:
@@ -913,7 +980,12 @@ class WhillControllerNode(Node):
             'state': 'closing' if self.closing else 'running',
             'control_mode': self.control_mode,
             'serial_port': self.port,
+            'calibration_file': self.calibration_file,
+            'calibration_sha256': self.calibration_sha256,
             'hardware_enabled': self.hardware_enabled,
+            'eye_control_enabled': self.eye_control_enabled,
+            'eye_state': self.eye_drive.fusion.state if self.eye_drive else None,
+            'eye_reason': self.eye_drive.fusion.reason if self.eye_drive else None,
             'serial_connected': bool(
                 self.serial_device and self.serial_device.is_open),
             'bluetooth_connected': self.bluetooth_connected,
@@ -981,6 +1053,43 @@ class WhillControllerNode(Node):
             payload, ensure_ascii=False, separators=(',', ':'))
         self.event_pub.publish(message)
 
+    def on_navigation_command(self, message):
+        """Opt-in navigation transport; requires local Arm and APP calibration."""
+        if not self.navigation_control_enabled:
+            return
+        stamp = message.header.stamp.sec * 1_000_000_000 + message.header.stamp.nanosec
+        age = (self.get_clock().now().nanoseconds - stamp) / 1e9
+        v = message.twist.linear; w = message.twist.angular
+        values = (v.x, v.y, v.z, w.x, w.y, w.z)
+        if (message.header.frame_id != 'base_link' or not all(math.isfinite(x) for x in values)
+                or not 0 <= age < .2 or stamp <= self.navigation_stamp
+                or any(abs(x) > 1e-6 for x in (v.y, v.z, w.x, w.y))
+                or v.x < 0 or (abs(v.x) > .05 and abs(w.z) > .05)):
+            if self.keyboard_armed:
+                self.toggle_keyboard_arm()
+            return
+        self.navigation_stamp = stamp
+        self.navigation_received_at = time.monotonic()
+        self.navigation_target = ('w' if v.x > .05 else
+                                  'a' if w.z > .05 else 'd' if w.z < -.05 else None)
+        self.update_navigation_drive()
+
+    def update_navigation_drive(self):
+        if not self.navigation_control_enabled or not self.keyboard_armed:
+            return
+        if (self.navigation_received_at is None or
+                time.monotonic() - self.navigation_received_at >= .2 or self.eye_blockers()):
+            self.toggle_keyboard_arm()
+            return
+        self.keys_down.difference_update(self.movement_keys)
+        if (self.navigation_hold_to_run and not self.navigation_keys_held):
+            self.update_keyboard_target()
+            return
+        if self.navigation_target is not None:
+            self.keys_down.add(self.navigation_target)
+        # Reuse the tested keyboard press/drag/release path and calibration.
+        self.update_keyboard_target()
+
     def on_ros_command(self, message):
         """
         Accept movement-only commands for ROS integration and testing.
@@ -990,6 +1099,13 @@ class WhillControllerNode(Node):
         ``mode:toggle`` safely exercises the same mode switch as the O key.
         """
         command = message.data.strip().lower()
+        if command == 'stop':
+            if self.keyboard_armed:
+                self.toggle_keyboard_arm()
+            return
+        if self.eye_control_enabled or self.navigation_control_enabled:
+            self.get_logger().warning('External control mode accepts only stop on the test input topic')
+            return
         self.publish_event('ros_input_received', command=command)
         if command == 'trajectory:reset':
             self.reset_trajectory()
@@ -1180,6 +1296,36 @@ class WhillControllerNode(Node):
         )
         return True
 
+    def update_keyboard_target(self):
+        """Own the button for the duration of an APP keyboard gesture."""
+        if not self.keyboard_auto_drag:
+            return self.move_locked_to_active_target()
+        if self.calibrating or self.locked_current_coordinates is None:
+            return False
+        active = self.vector() != (0, 0)
+        if active and not self.click_held:
+            # A previous stop may have left the pointer away from center.
+            saved_keys = self.keys_down.copy()
+            self.keys_down.difference_update(self.movement_keys)
+            centered = self.move_locked_to_active_target()
+            self.keys_down = saved_keys
+            if not centered:
+                self.toggle_keyboard_arm()
+                return False
+            if not self._write_command(b'[', action='keyboard_drag_begin'):
+                self.toggle_keyboard_arm()
+                return False
+            self.click_held = True
+        elif not active and self.click_held:
+            if not self._write_command(b']', action='keyboard_drag_end'):
+                self.toggle_keyboard_arm()
+                return False
+            self.click_held = False
+        if not self.move_locked_to_active_target():
+            self.toggle_keyboard_arm()
+            return False
+        return True
+
     def send_current_direction(self):
         vector = self.vector()
         command = COMMANDS.get(vector)
@@ -1216,6 +1362,41 @@ class WhillControllerNode(Node):
         self.repeat_job = self.root.after(
             REPEAT_INTERVAL_MS, self.repeat_once)
 
+    def stop_navigation_hold(self):
+        """Release locally now; also revoke the upstream navigation task."""
+        self.navigation_keys_suppressed.update(self.navigation_keys_held)
+        self.navigation_keys_held.clear()
+        self.publish_navigation_key('s')
+        self.keys_down.difference_update(self.movement_keys)
+        self.update_keyboard_target()
+
+    def navigation_hold_tick(self):
+        self.navigation_hold_job = None
+        if self.closing:
+            return
+        if self.keyboard_armed:
+            for key in sorted(self.navigation_keys_held):
+                if not self.physical_keyboard.is_down(key):
+                    self.finish_navigation_release(key)
+                else:
+                    self.publish_navigation_key(key, action='hold')
+        self.navigation_hold_job = self.root.after(50, self.navigation_hold_tick)
+
+    def on_navigation_focus_out(self, event):
+        if not (self.navigation_control_enabled and self.navigation_hold_to_run):
+            return
+        # Focus moves between widgets are allowed; leaving the app stops motion.
+        def check():
+            if not self.closing and self.root.focus_displayof() is None:
+                self.stop_navigation_hold()
+        self.root.after_idle(check)
+
+    def publish_navigation_key(self, key, action='press'):
+        message = String()
+        message.data = json.dumps(dict(
+            key=key, action=action, stamp=self.get_clock().now().nanoseconds / 1e9))
+        self.navigation_key_pub.publish(message)
+
     def on_key_press(self, event):
         key = event.keysym.lower()
         pending_release = self.release_jobs.pop(key, None)
@@ -1226,7 +1407,26 @@ class WhillControllerNode(Node):
         if key == 'escape':
             self.close()
             return 'break'
-        if not self.keyboard_armed:
+        if self.navigation_control_enabled:
+            key = ' ' if key == 'space' else key
+            if key in ('w', 'a', 'd', 'u', 'c', ' ', 's'):
+                if self.keyboard_armed or key in (' ', 's'):
+                    if self.navigation_hold_to_run:
+                        if key in (' ', 's'):
+                            self.stop_navigation_hold()
+                            return 'break'
+                        if key in ('w', 'a', 'd', 'u'):
+                            if key in self.navigation_keys_suppressed or key in self.navigation_keys_held:
+                                return 'break'
+                            if not self.physical_keyboard.is_down(key):
+                                return 'break'
+                            self.navigation_keys_held.add(key)
+                    self.publish_navigation_key(key)
+                    self._set_display('导航按键已转发；接受/拒绝回执见运行终端。')
+                else:
+                    self._set_display('请先点击 Arm Keyboard Control，再按导航键。')
+            return 'break'
+        if self.eye_control_enabled or not self.keyboard_armed:
             return 'break'
         if key == 'o':
             if key not in self.keys_down:
@@ -1243,6 +1443,10 @@ class WhillControllerNode(Node):
                 self.request_locked_initialization()
                 self.publish_event('key_press', key=key)
             self.keys_down.add(key)
+            return 'break'
+        if (self.control_mode == 'app_locked' and self.keyboard_auto_drag
+                and key in {'f', 'return', 'kp_enter'}):
+            self._set_display('Auto drag: hold a direction key; release to stop')
             return 'break'
         if key == 'f':
             if key not in self.keys_down:
@@ -1280,7 +1484,7 @@ class WhillControllerNode(Node):
         self.start_key_timing(key)
         self.publish_event('key_press', key=key)
         if self.control_mode == 'app_locked':
-            self.move_locked_to_active_target()
+            self.update_keyboard_target()
             return 'break'
         if was_idle:
             self.initial_job = self.root.after(
@@ -1290,6 +1494,14 @@ class WhillControllerNode(Node):
         return 'break'
 
     def on_key_release(self, event):
+        if self.navigation_control_enabled:
+            key = event.keysym.lower()
+            if self.navigation_hold_to_run and key in ('w', 'a', 'd', 'u'):
+                # X11 auto-repeat may deliver KeyRelease/KeyPress far apart
+                # under load. A timer cannot distinguish it from a real key-up.
+                if not self.physical_keyboard.is_down(key):
+                    self.finish_navigation_release(key)
+            return 'break'
         key = event.keysym.lower()
         if not self.keyboard_armed:
             self.keys_down.discard(key)
@@ -1307,6 +1519,16 @@ class WhillControllerNode(Node):
         )
         return 'break'
 
+    def finish_navigation_release(self, key):
+        self.release_jobs.pop(key, None)
+        self.navigation_keys_suppressed.discard(key)
+        self.navigation_keys_held.discard(key)
+        self.publish_navigation_key(key, action='release')
+        if not self.navigation_keys_held:
+            # Do not wait for ROS, the planner or the next executor tick.
+            self.keys_down.difference_update(self.movement_keys)
+            self.update_keyboard_target()
+
     def finish_key_release(self, key):
         self.release_jobs.pop(key, None)
         self.finish_key_timing(key)
@@ -1317,7 +1539,7 @@ class WhillControllerNode(Node):
         if self.control_mode == 'app_locked':
             self.keys_down.discard(key)
             self.publish_event('key_release', key=key)
-            self.move_locked_to_active_target()
+            self.update_keyboard_target()
             return
 
         movement_was_pending = self.initial_job is not None
@@ -1342,6 +1564,18 @@ class WhillControllerNode(Node):
         if self.closing:
             return
         self.closing = True
+        if self.navigation_control_enabled:
+            self.navigation_keys_suppressed.update(self.navigation_keys_held)
+            self.navigation_keys_held.clear()
+            self.publish_navigation_key('s')
+        if self.physical_keyboard is not None:
+            self.physical_keyboard.close()
+        if self.navigation_hold_job is not None:
+            self.root.after_cancel(self.navigation_hold_job)
+            self.navigation_hold_job = None
+        if self.ros_pump_job is not None:
+            self.root.after_cancel(self.ros_pump_job)
+            self.ros_pump_job = None
         if self.ble_query_job is not None:
             self.root.after_cancel(self.ble_query_job)
             self.ble_query_job = None
@@ -1355,6 +1589,7 @@ class WhillControllerNode(Node):
             if self.serial_device and self.serial_device.is_open:
                 self.serial_device.close()
         finally:
+            self.ros_executor.shutdown(timeout_sec=0.)
             self.root.quit()
             self.root.destroy()
 

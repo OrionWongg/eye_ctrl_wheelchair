@@ -1,0 +1,20 @@
+--- a/src/depth_image_ros2_node.cpp
++++ b/src/depth_image_ros2_node.cpp
+@@ -37,7 +37,7 @@
+ 
+ void DepthImageRos2Node::initialize()
+ {
+-    cloud_sub_.subscribe(this, cloud_raw_topic_);
++    cloud_sub_.subscribe(this, cloud_raw_topic_, rclcpp::SensorDataQoS().keep_last(1).get_rmw_qos_profile());
+     color_compressed_sub_.subscribe(this, color_compressed_topic_);
+     color_sub_.subscribe(this, color_raw_topic_);
+ 
+@@ -47,7 +47,7 @@
+ 
+     it_ = std::make_shared<image_transport::ImageTransport>(shared_from_this());
+     depth_image_pub_ = it_->advertise(depth_image_topic_, 1);
+-    depth_cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(depth_cloud_topic_, 1);
++    depth_cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(depth_cloud_topic_, rclcpp::SensorDataQoS().keep_last(1));
+ 
+     RCLCPP_INFO(this->get_logger(), "DepthImageRos2Node initialized successfully");
+ }

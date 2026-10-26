@@ -1,0 +1,24 @@
+--- a/include/host_sdk_sample.h
++++ b/include/host_sdk_sample.h
+@@ -1929,15 +1929,18 @@
+                                     .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
+                                     .durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
+ 
++            // Point clouds prioritize fresh observations over retransmission.
++            auto qos_cloud = rclcpp::SensorDataQoS().keep_last(1);
++
+             imu_pub_ = node_->create_publisher<ros::Imu>("odin1/imu", qos_small);
+             rgb_pub_ = node_->create_publisher<ros::Image>("odin1/image", qos_sensor);
+-            cloud_pub_ = node_->create_publisher<ros::PointCloud2>("odin1/cloud_raw", qos_sensor);
+-            xyzrgbacloud_pub_ = node_->create_publisher<ros::PointCloud2>("odin1/cloud_slam", qos_sensor);
++            cloud_pub_ = node_->create_publisher<ros::PointCloud2>("odin1/cloud_raw", qos_cloud);
++            xyzrgbacloud_pub_ = node_->create_publisher<ros::PointCloud2>("odin1/cloud_slam", qos_cloud);
+             odom_publisher_ = node_->create_publisher<ros::Odometry>("odin1/odometry", qos_sensor);
+             odom_highfreq_publisher_ = node_->create_publisher<ros::Odometry>("odin1/odometry_highfreq", qos_small);
+             path_publisher_ = node_->create_publisher<visualization_msgs::msg::MarkerArray>("odin1/path", qos_sensor);
+             pub_camera_pose_visual_ = node_->create_publisher<visualization_msgs::msg::MarkerArray>("odin1/camera_pose_visual", qos_sensor);
+-            rgbcloud_pub_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>("odin1/cloud_render", qos_sensor);
++            rgbcloud_pub_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>("odin1/cloud_render", qos_cloud);
+             compressed_rgb_pub_ = node_->create_publisher<sensor_msgs::msg::CompressedImage>("odin1/image/compressed", qos_sensor);
+             undistort_rgb_pub_ = node_->create_publisher<sensor_msgs::msg::Image>("odin1/image/undistorted", qos_sensor);
+             intensity_gray_pub_ = node_->create_publisher<sensor_msgs::msg::Image>("odin1/image/intensity_gray", qos_sensor);

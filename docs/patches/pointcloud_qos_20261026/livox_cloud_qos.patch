@@ -1,0 +1,16 @@
+--- a/src/lddc.cpp
++++ b/src/lddc.cpp
+@@ -531,11 +531,11 @@
+     if (kPointCloud2Msg == msg_type) {
+       DRIVER_INFO(*cur_node_,
+           "%s publish use PointCloud2 format", topic_name.c_str());
+-      return cur_node_->create_publisher<PointCloud2>(topic_name, queue_size);
++      return cur_node_->create_publisher<PointCloud2>(topic_name, rclcpp::SensorDataQoS().keep_last(1));
+     } else if (kLivoxCustomMsg == msg_type) {
+       DRIVER_INFO(*cur_node_,
+           "%s publish use livox custom format", topic_name.c_str());
+-      return cur_node_->create_publisher<CustomMsg>(topic_name, queue_size);
++      return cur_node_->create_publisher<CustomMsg>(topic_name, rclcpp::SensorDataQoS().keep_last(1));
+     }
+ #if 0
+     else if (kPclPxyziMsg == msg_type)  {

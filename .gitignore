@@ -49,3 +49,9 @@ wheelchair_shared_ws/vendor/smac/*
 **/.local/
 *.mcap
 *.plan
+# Local runtime directory symlinks (directory-only patterns do not match links)
+projects/EYETLE/.venv
+projects/EYETLE/install
+
+# Sensor launcher runtime lock
+sensor_visualization/.start.lock

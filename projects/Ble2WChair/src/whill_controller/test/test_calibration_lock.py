@@ -59,3 +59,11 @@ def test_direction_offsets():
         'right-forward': 'wwwwdddd',
         'right-backward': 'dddddssss',
     }
+
+
+def test_session_keyboard_profile_identity():
+    """Preserve the exact keyboard profile selected by the user in this session."""
+    import hashlib
+    path = Path(__file__).parents[1] / 'config/ipad_calibration_20261009.json'
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == (
+        'd515e4c0c0aacaab961e4d5af1f4e94e9345acc84a232ccb18c5548bb2dd64dd')

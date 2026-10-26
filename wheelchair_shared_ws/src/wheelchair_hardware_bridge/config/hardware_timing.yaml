@@ -1,0 +1,7 @@
+# Hardware-only overrides layered after narrow_control.yaml.
+/**:
+  ros__parameters:
+    # MID360 stamps the frame start: ~0.1 s integration plus up to 0.1 s
+    # phase between the two lidars precede every scan. The planner predicts
+    # with the measured observation age, so this only widens the freshness gate.
+    sensor_age: 0.38

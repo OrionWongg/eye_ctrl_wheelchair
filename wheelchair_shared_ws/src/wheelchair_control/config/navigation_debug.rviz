@@ -44,7 +44,7 @@ Visualization Manager:
       Enabled: true
       Topic:
         Value: /wheelchair/scan
-        Depth: 5
+        Depth: 1
         Durability Policy: Volatile
         Reliability Policy: Best Effort
       Style: Points

@@ -18,6 +18,7 @@ class Config:
     linear_brake: float = .5
     angular_brake: float = .7
     sensor_age: float = .25
+    map_age: float = 2.
     odom_age: float = .15
     action_ttl: float = .15
     transport_delay: float = .05
@@ -154,11 +155,20 @@ class Predictor:
             g=math.inf if fast_straight else clearance(transform(list(c.footprint),s.pose),obstacles,boundary,pad)
             gap=min(gap,g)
             if g<=pad:
-                self.last_failure=collision_diagnostic(transform(list(c.footprint),s.pose),obstacles,boundary,pad) if diagnostics else {}
+                # Always compute the diagnostic at the initial pose to distinguish
+                # boundary-edge overhang from genuine obstacle contact.
+                if diagnostics or elapsed==0:
+                    self.last_failure=collision_diagnostic(transform(list(c.footprint),s.pose),obstacles,boundary,pad)
+                else:
+                    self.last_failure={}
                 self.last_failure.update(time=elapsed,pose=s.pose,initial=elapsed==0,
                     hard_margin=c.margin,model_error=c.model_error,sampling_error=pad-c.margin-c.model_error,
                     comfort_distance=c.comfort_distance)
-                return False,'INITIAL_HARD_BOUNDARY' if elapsed==0 else 'COLLISION_OR_UNKNOWN' 
+                if elapsed==0:
+                    reason='MAP_BOUNDARY_PROXIMITY' if self.last_failure.get('obstacle_id')=='known_free_boundary' else 'INITIAL_HARD_BOUNDARY'
+                else:
+                    reason='COLLISION_OR_UNKNOWN'
+                return False,reason
             if reference is not None:
                 dx,dy=s.x-reference[0],s.y-reference[1]
                 lateral=-math.sin(reference[2])*dx+math.cos(reference[2])*dy
@@ -185,10 +195,13 @@ class Predictor:
                         mid=(lo+hi)//2
                         if clearance(swept(mid),obstacles,boundary,pad)<=pad:hi=mid
                         else:lo=mid+1
-                    self.last_failure=collision_diagnostic(transform(list(c.footprint),poses[lo]),obstacles,boundary,pad) if diagnostics else {}
+                    self.last_failure=collision_diagnostic(transform(list(c.footprint),poses[lo]),obstacles,boundary,pad)
                     self.last_failure.update(time=times[lo],pose=poses[lo],initial=lo==0,hard_margin=c.margin,
                         model_error=c.model_error,sampling_error=pad-c.margin-c.model_error,comfort_distance=c.comfort_distance)
-                    ok=False;why='INITIAL_HARD_BOUNDARY' if lo==0 else 'COLLISION_OR_UNKNOWN'
+                    if lo==0:
+                        ok=False;why='MAP_BOUNDARY_PROXIMITY' if self.last_failure.get('obstacle_id')=='known_free_boundary' else 'INITIAL_HARD_BOUNDARY'
+                    else:
+                        ok=False;why='COLLISION_OR_UNKNOWN'
             return Result(ok,s,gap,why,poses,elapsed,self.last_failure.copy())
         def phase(seconds,target=None,braking=False):
             nonlocal s,elapsed,run_remaining,run_started
@@ -338,10 +351,15 @@ class Planner:
         p=self.current_intent
         self.last_diagnostics={}
         if not healthy: return self.trip('SENSOR_OR_EXECUTOR_FAULT')
-        stationary_clear=clearance(transform(list(self.cfg.footprint),state.pose),obstacles,boundary,self.cfg.padding)>self.cfg.padding
+        footprint_world=transform(list(self.cfg.footprint),state.pose)
+        stationary_clear=clearance(footprint_world,obstacles,boundary,self.cfg.padding)>self.cfg.padding
         if not stationary_clear:
-            self.last_diagnostics['current_geometry']=collision_diagnostic(transform(list(self.cfg.footprint),state.pose),obstacles,boundary,self.cfg.padding)
-            return self.trip('INITIAL_HARD_BOUNDARY')
+            diag=collision_diagnostic(footprint_world,obstacles,boundary,self.cfg.padding)
+            self.last_diagnostics['current_geometry']=diag
+            # Distinguish boundary-edge overhang (robot at map edge / unknown area)
+            # from genuine obstacle contact so the operator sees a meaningful reason.
+            reason='MAP_BOUNDARY_PROXIMITY' if diag.get('obstacle_id')=='known_free_boundary' else 'INITIAL_HARD_BOUNDARY'
+            return self.trip(reason)
         self.ready=self.latch and self.acknowledged and stopped and stationary_clear
         if self.latch: return Decision(STOP,'BLOCKED',self.reason+(':READY_TO_REARM' if self.ready else ''))
         if p is None or not p.valid or not p.enabled or p.command==STOP:

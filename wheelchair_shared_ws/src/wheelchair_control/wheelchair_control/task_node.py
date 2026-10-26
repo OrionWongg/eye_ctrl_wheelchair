@@ -23,6 +23,7 @@ def stamp(msg):return msg.header.stamp.sec+msg.header.stamp.nanosec/1e9
 class TaskManagerNode(Node):
     def __init__(self, directional=False):
         super().__init__('wheelchair_task_manager')
+        self.allow_dynamic_map=self.declare_parameter('allow_dynamic_map',False).value
         self.directional=directional
         self.navigation={};self.navigation_task=''
         source=self.declare_parameter('input_source','eye').value
@@ -123,7 +124,7 @@ class TaskManagerNode(Node):
         if not m.complete:return
         signature=(tuple((p.x,p.y) for p in m.known_free_boundary.points),
                    tuple(tuple((p.x,p.y) for p in poly.points) for poly in m.obstacles))
-        if self.map_signature is not None and self.map_signature!=signature:self.core.stop('TASK_CONTEXT_MAP_CHANGED',time.monotonic(),FAULT)
+        if not self.allow_dynamic_map and self.map_signature is not None and self.map_signature!=signature:self.core.stop('TASK_CONTEXT_MAP_CHANGED',time.monotonic(),FAULT)
         self.map_signature=signature
     def cancel(self,_):
         self.events.clear();self.core.stop('USER_CANCEL',time.monotonic(),0)
