@@ -138,7 +138,7 @@ def test_stationary_footprint_not_blocked_by_blind_band_with_open_front():
     from wheelchair_control.geometry import clearance,transform
     ranges=np.full(720,math.inf);ranges[260:460]=3.   # only a +-50 deg front cone sees returns
     res=.05;cells,origin=rasterize(ranges,-math.pi,math.pi/360,.15,8.,(0,0,0),res,10.)
-    cfg=Config(footprint=((-.45,-.30),(.55,-.30),(.55,.30),(-.45,.30)),margin=.06,model_error=.025)
+    cfg=Config(footprint=((-.45,-.30),(.55,-.30),(.55,.30),(-.45,.30)),margin=.06)
     n=cells.shape[0];w=n*res
     boundary=((origin[0],origin[1]),(origin[0]+w,origin[1]),(origin[0]+w,origin[1]+w),(origin[0],origin[1]+w))
     fp=transform(list(cfg.footprint),(0,0,0))
@@ -180,8 +180,8 @@ def test_map_updates_remain_validated_in_both_modes(dynamic):
     from wheelchair_control.planner import Config
     reasons=[]
     clock=SimpleNamespace(nanoseconds=10_000_000_000)
-    node=SimpleNamespace(cfg=Config(mode='corridor_assist'),allow_dynamic_map=dynamic,
-        map_guard=StreamGuard(.5),map_geometry=None,core=SimpleNamespace(trip=reasons.append),
+    node=SimpleNamespace(cfg=Config(),allow_dynamic_map=dynamic,
+        map_guard=StreamGuard(Config().map_age),map_geometry=None,core=SimpleNamespace(trip=reasons.append),
         get_clock=lambda:SimpleNamespace(now=lambda:clock))
     msg=ObstacleMap();msg.header.frame_id='odom';msg.header.stamp.sec=10
     msg.session_id='sensor';msg.sequence=1;msg.complete=True
@@ -190,7 +190,7 @@ def test_map_updates_remain_validated_in_both_modes(dynamic):
     PlannerNode.on_map(node,msg);assert node.map_valid
     reasons.clear();msg.sequence+=1;msg.obstacles[0].points[0].x=1.1
     PlannerNode.on_map(node,msg);assert node.map_valid
-    assert ('PASSAGE_MAP_CHANGED' in reasons)==(not dynamic)
+    assert 'PASSAGE_MAP_CHANGED' not in reasons
     msg.sequence+=1;msg.obstacles[0].points[0].x=float('nan')
     PlannerNode.on_map(node,msg);assert not node.map_valid
     msg.complete=False;msg.sequence+=1

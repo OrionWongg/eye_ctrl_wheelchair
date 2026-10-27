@@ -10,6 +10,6 @@ source /opt/ros/humble/setup.bash
 source "$workspace/install/local_setup.bash"
 export ROS_DOMAIN_ID="${WHEELCHAIR_ROS_DOMAIN_ID:-0}"
 export ROS_LOCALHOST_ONLY="${ROS_LOCALHOST_ONLY:-0}"
-config=/home/whill/sensor_visualization/hardware_navigation.rviz
+config="$ROOT/sensor_visualization/hardware_navigation.rviz"
 exec ros2 launch wheelchair_control navigation_debug.launch.py \
     use_sim_time:=false rviz_config:="$config" "$@"

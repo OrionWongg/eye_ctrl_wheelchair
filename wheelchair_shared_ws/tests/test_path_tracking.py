@@ -9,8 +9,9 @@ from wheelchair_control.protocol import STOP,FORWARD,LEFT,RIGHT
 from wheelchair_control.executor import Executor
 from wheelchair_control.geometry import IndexedObstacles,clearance,transform,wrap
 from wheelchair_control.nav2_transport import occupied_rectangles
-from test_passage import config,BOUND,walls
-from test_directional import manager_start,nav_authorize
+from nav_fixtures import config,BOUND,walls
+from nav_fixtures import nav_authorize
+from test_directional import manager_start
 from test_task_manager import feed
 
 

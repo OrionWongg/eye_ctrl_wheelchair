@@ -9,19 +9,6 @@ Panels:
     - /PointCloud21
     Splitter Ratio: 0.5
   Tree Height: 796
-- Class: rviz_common/Selection
-  Name: Selection
-- Class: rviz_common/Tool Properties
-  Expanded:
-  - /2D Nav Goal1
-  - /Publish Point1
-  Name: Tool Properties
-  Splitter Ratio: 0.5886790156364441
-- Class: rviz_common/Views
-  Expanded:
-  - /Current View1
-  Name: Views
-  Splitter Ratio: 0.5
 Visualization Manager:
   Class: ''
   Displays:
@@ -208,7 +195,7 @@ Visualization Manager:
       Color: 80; 255; 80
       Alpha: 1
     - Class: rviz_default_plugins/Path
-      Name: Last planned path (green; check age in text)
+      Name: Planner path (green; last received, age in text)
       Enabled: true
       Topic:
         Value: /wheelchair/debug/local_plan
@@ -219,6 +206,9 @@ Visualization Manager:
       Alpha: 1
       Line Style: Billboards
       Line Width: 0.04
+      Pose Style: Axes
+      Pose Axis Length: 0.12
+      Pose Axis Radius: 0.008
       Buffer Length: 1
       Offset:
         X: 0
@@ -242,25 +232,57 @@ Visualization Manager:
         Y: 0
         Z: 0.1
     - Class: rviz_default_plugins/MarkerArray
-      Name: Safety margins, predicted motion and stop reason
+      Name: 最终硬安全边界 [红]
       Enabled: true
       Topic:
-        Value: /wheelchair/debug/markers
+        Value: /wheelchair/debug/hard
         Depth: 1
         Durability Policy: Volatile
         Reliability Policy: Reliable
-  - Class: rviz_default_plugins/MarkerArray
-    Name: Live data status
-    Enabled: true
-    Topic:
-      Value: /wheelchair/display/stream_status
-      Depth: 1
-      Durability Policy: Volatile
-      Reliability Policy: Reliable
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Planner 目标点与朝向 [橙色箭头]
+      Enabled: true
+      Topic:
+        Value: /wheelchair/debug/navigation_goal
+        Depth: 1
+        Durability Policy: Volatile
+        Reliability Policy: Reliable
+    - Class: rviz_default_plugins/MarkerArray
+      Name: 点云车体过滤框 [紫]
+      Enabled: true
+      Topic:
+        Value: /wheelchair/debug/perception_body_mask_not_safety
+        Depth: 1
+        Durability Policy: Volatile
+        Reliability Policy: Reliable
+    - Class: rviz_default_plugins/MarkerArray
+      Name: 自身回波排除框 [粉]
+      Enabled: true
+      Topic:
+        Value: /wheelchair/debug/perception_self_echo_not_safety
+        Depth: 1
+        Durability Policy: Volatile
+        Reliability Policy: Reliable
+    - Class: rviz_default_plugins/MarkerArray
+      Name: 侧后盲区清除范围 [青]
+      Enabled: true
+      Topic:
+        Value: /wheelchair/debug/perception_blind_band_ideal_not_safety
+        Depth: 1
+        Durability Policy: Volatile
+        Reliability Policy: Reliable
+    - Class: rviz_default_plugins/MarkerArray
+      Name: 控制状态文字 [默认关闭]
+      Enabled: false
+      Topic:
+        Value: /wheelchair/debug/status_text
+        Depth: 1
+        Durability Policy: Volatile
+        Reliability Policy: Reliable
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: base_footprint
+    Fixed Frame: odom
     Frame Rate: 15
   Name: root
   Tools:
@@ -299,7 +321,7 @@ Visualization Manager:
       Name: Current View
       Near Clip Distance: 0.009999999776482582
       Pitch: 0.9503982067108154
-      Target Frame: <Fixed Frame>
+      Target Frame: base_footprint
       Value: Orbit (rviz)
       Yaw: 2.6603963375091553
     Saved: null
@@ -308,13 +330,7 @@ Window Geometry:
     collapsed: false
   Height: 720
   Hide Left Dock: false
-  Hide Right Dock: false
-  Selection:
-    collapsed: false
-  Tool Properties:
-    collapsed: false
-  Views:
-    collapsed: false
+  Hide Right Dock: true
   Width: 950
   X: 0
   Y: 30

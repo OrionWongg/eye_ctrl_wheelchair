@@ -26,8 +26,6 @@ def generate_launch_description():
                  'ground_tolerance': 0.08,
                  'cluster_filter_enabled': ParameterValue(LaunchConfiguration('cluster_filter_enabled'), value_type=bool)}  # Temporary stationary noise comparison only.
              ], output='screen'),
-        Node(package='wheelchair_hardware_bridge', executable='odom_relay',
-             name='odom_relay', parameters=[bridge], output='screen'),
         Node(package='wheelchair_hardware_bridge', executable='scan_map',
              name='scan_map', parameters=[bridge], output='screen'),
         Node(package='wheelchair_nav2', executable='wheelchair_costmap',

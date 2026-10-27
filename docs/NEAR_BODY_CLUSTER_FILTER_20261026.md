@@ -11,7 +11,7 @@
 传感器命令保持原样：
 
 ```bash
-ROS_DOMAIN_ID=0 ROS_LOCALHOST_ONLY=0 /home/whill/sensor_visualization/start_sensors.sh
+ROS_DOMAIN_ID=0 ROS_LOCALHOST_ONLY=0 ./scripts/start_sensors.sh
 ```
 
 本次已构建桥接包。退出并重启原正常驾驶控制栈，重启后的cloud_to_scan加载新配置；无需重启传感器。本次未自动停止或重启运行中的驾驶进程，未发送运动指令。

@@ -1,19 +1,12 @@
 from pathlib import Path
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration,PythonExpression
 from launch_ros.actions import Node
 from launch.conditions import IfCondition,UnlessCondition
 from launch_ros.parameter_descriptions import ParameterValue
 from ament_index_python.packages import get_package_share_directory
-
-def validate_interaction(context):
-    interaction=LaunchConfiguration('interaction_mode').perform(context)
-    mode=LaunchConfiguration('mode').perform(context)
-    if interaction in ('intent_confirm','directional_intent') and mode!='corridor_assist':
-        raise RuntimeError('intent_confirm currently requires mode:=corridor_assist; use gaze_joystick for stop_only/bounded_assist comparisons')
-    return []
 
 def generate_launch_description():
     share=get_package_share_directory('wheelchair_control')
@@ -33,9 +26,8 @@ def generate_launch_description():
         DeclareLaunchArgument('eye_sample_mode',default_value='legacy',choices=['legacy','stamped','fusion']),
         DeclareLaunchArgument('task_max_time',default_value='10.0'),
         DeclareLaunchArgument('task_max_distance',default_value='3.0'),
-        DeclareLaunchArgument('mode',default_value=PythonExpression(["'corridor_assist' if '",LaunchConfiguration('interaction_mode'),"' != 'gaze_joystick' else 'stop_only'"])),
-        DeclareLaunchArgument('config',default_value=PythonExpression(["'",share,"/config/narrow_control.yaml' if '",LaunchConfiguration('mode'),"' == 'corridor_assist' else '",share,"/config/control.yaml'"])),
-        OpaqueFunction(function=validate_interaction),
+        DeclareLaunchArgument('mode',default_value='stop_only',choices=['stop_only','bounded_assist']),
+        DeclareLaunchArgument('config',default_value=PythonExpression(["'",share,"/config/narrow_control.yaml' if '",LaunchConfiguration('interaction_mode'),"' != 'gaze_joystick' else '",share,"/config/control.yaml'"])),
         IncludeLaunchDescription(PythonLaunchDescriptionSource(get_package_share_directory('wheelchair_sim')+'/launch/simulation.launch.py')),
         Node(package='wheelchair_control',executable='intent_mux',condition=IfCondition(legacy),parameters=[{'input_source':LaunchConfiguration('input_source'),'use_sim_time':True}],output='screen'),
         Node(package='wheelchair_control',executable='task_manager',condition=IfCondition(confirmed),parameters=[share+'/config/tasks.yaml',config,{'input_source':LaunchConfiguration('input_source'),'use_sim_time':True,'max_time':ParameterValue(LaunchConfiguration('task_max_time'),value_type=float),'max_distance':ParameterValue(LaunchConfiguration('task_max_distance'),value_type=float)}],output='screen'),

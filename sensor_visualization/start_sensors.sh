@@ -2,6 +2,7 @@
 # One ROS launch process owns all children and handles Ctrl+C shutdown.
 set -eo pipefail
 sensor_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+root="$(cd -- "$sensor_dir/.." && pwd)"
 selection=both
 check=false
 while [[ $# -gt 0 ]]; do
@@ -20,12 +21,14 @@ while [[ $# -gt 0 ]]; do
         *) echo "Unknown argument: $1" >&2; exit 2 ;;
     esac
 done
-for sensor_setup in /opt/ros/humble/setup.bash /home/whill/livox_ws/install/local_setup.bash /home/whill/odin_ws/install/local_setup.bash; do
+for sensor_setup in /opt/ros/humble/setup.bash /home/whill/livox_ws/install/local_setup.bash /home/whill/odin_ws/install/local_setup.bash "$root/wheelchair_shared_ws/install/local_setup.bash"; do
     if [[ ! -f "$sensor_setup" ]]; then
         echo "缺少 ROS 环境文件：$sensor_setup" >&2
         exit 1
     fi
+    set +u
     source "$sensor_setup"
+    set -u
 done
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-0}"
 export ROS_LOCALHOST_ONLY="${ROS_LOCALHOST_ONLY:-0}"

@@ -4,11 +4,11 @@ import argparse
 import math
 import os
 
-# Existing sensor drivers own raw clouds and mount TF. Derived topics must have
-# exactly one owner, which the launcher is about to start.
+# start_sensors.sh owns /wheelchair/odom and the odom->base_link TF through
+# odom_relay, so that topic is an input here, not a derived topic to claim.
 DERIVED_TOPICS = (
     '/wheelchair/scan', '/wheelchair/planning_map', '/wheelchair/obstacle_map',
-    '/wheelchair/odom', '/wheelchair/sim/drive', '/whill/controller/navigation',
+    '/wheelchair/sim/drive', '/whill/controller/navigation',
 )
 
 

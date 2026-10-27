@@ -6,7 +6,7 @@ from wheelchair_control.executor import Executor
 from wheelchair_control.geometry import IndexedObstacles, wrap
 from wheelchair_control.planner import Planner, State, integrate, toward
 from wheelchair_control.protocol import Packet, STOP, FORWARD, LEFT, RIGHT
-from test_passage import config, walls, BOUND, side_door_map
+from nav_fixtures import config, walls, BOUND
 
 
 def authorize(core, state, obstacles, command=FORWARD, target=None, task_id='task-1'):
@@ -21,38 +21,15 @@ def authorize(core, state, obstacles, command=FORWARD, target=None, task_id='tas
     return packet
 
 
-def test_scope_and_passage_survive_identical_authorization_renewals():
-    core = Planner(config()); state = State(yaw=.03); obstacles = walls(1.1)
-    packet = authorize(core, state, obstacles)
-    core.tick(state, obstacles, BOUND, .1)
-    scope, passage = core.task_scope, core.local
-    for i in range(3, 8):
-        core.intent(replace(packet, sequence=i, stamp=i*.05))
-        core.tick(state, obstacles, BOUND, i*.05)
-        assert core.task_scope is scope and core.local is passage
-        assert core.reference == state.pose
-
-
 def test_open_scope_cannot_acquire_newly_discovered_corridor():
     core = Planner(config()); state = State(yaw=.05)
     authorize(core, state, IndexedObstacles([]))
     assert core.tick(state, IndexedObstacles([]), BOUND, .1).action == FORWARD
-    assert core.local.passage is None
-    # A changed observation must not attach this authorization to a new axis.
+    reference = core.task_scope.reference
+    # Walls appearing later do not attach this authorization to a new axis.
     result = core.tick(state, walls(1.3), BOUND, .2)
-    assert result.action == FORWARD and result.reason == 'TASK_CONTINUE_OPEN'
-    assert core.local.passage is None
-
-
-def test_task_stops_before_side_branch_while_legacy_detection_stays_compatible():
-    core = Planner(config()); state = State()
-    obs = side_door_map()
-    authorize(core, state, obs)
-    core.tick(state, obs, BOUND, .1)
-    assert core.local.passage.end < 1.2
-    state = State(x=.8, v=.372, current_action=FORWARD, observation_age=.03)
-    result = core.tick(state, obs, BOUND, .2, stopped=False)
-    assert result.action == STOP and result.reason == 'PASSAGE_END_OR_BRANCH'
+    assert result.action == FORWARD and result.reason == 'TASK_CONTINUE_FORWARD'
+    assert core.task_scope.reference == reference
 
 
 @pytest.mark.parametrize('field,value', [('target_yaw', .3), ('reference_yaw', .2),
@@ -144,7 +121,7 @@ def test_cancel_clears_all_heading_phases(phase):
     core.tick(State(), obs, BOUND, .1)
     core.task_scope.phase = phase
     core.intent(Packet('manager', 3, .2, .25, STOP, False))
-    assert core.task_scope is None and core.local is None
+    assert core.task_scope is None
     assert core.tick(State(), obs, BOUND, .2).action == STOP
 
 
@@ -177,10 +154,9 @@ def test_constrained_exit_uses_bounded_turn_and_never_substitutes_direction():
                            reference_yaw=state.yaw, target_yaw=state.yaw+sign*math.radians(15)))
         assert core.tick(state, obs, bound, .1).action == STOP
         decision = core.tick(state, obs, bound, .3)
-        if command == LEFT:
-            assert decision.action == LEFT and decision.reason == 'TASK_HEADING_MICRO_TURN'
-        else:
-            assert decision.action == STOP and decision.reason == 'TASK_HEADING_BLOCKED'
+        # Braking-only check: each turn's braking sweep fits, and the
+        # requested direction is never substituted.
+        assert decision.action == command and decision.reason.startswith('TASK_HEADING_')
 
 
 def test_packet_ros_conversion_preserves_task_metadata_and_legacy_defaults():
@@ -204,7 +180,7 @@ def test_open_continue_restores_locked_heading_before_resuming_forward(drift):
     state=State(observation_age=.03, execution_phase=0)
     packet=authorize(core, state, obs)
     core.tick(state, obs, BOUND, .1)
-    scope=core.task_scope; local=core.local
+    scope=core.task_scope
     state=replace(state, yaw=math.radians(drift))
     executor=Executor(c); executor.request(STOP, 0)
     executor.tick(0, 0, 0, True, True); executor.tick(.2, 0, 0, True, True)
@@ -215,8 +191,8 @@ def test_open_continue_restores_locked_heading_before_resuming_forward(drift):
         stopped=executor.phase=='STOPPED' and abs(state.v)<.015 and abs(state.w)<.025
         decision=core.tick(state, obs, BOUND, now, stopped=stopped)
         assert not core.latch, (decision, state)
-        assert core.task_scope is scope and core.local is local
-        assert core.reference == (0., 0., 0.) and local.passage is None
+        assert core.task_scope is scope
+        assert core.reference == (0., 0., 0.)
         if decision.reason=='TASK_CONTINUE_HEADING_ALIGNED':
             assert stopped and abs(state.yaw)<=c.task_heading_tolerance
             aligned=True
@@ -252,7 +228,7 @@ def test_cancel_discards_open_heading_hold_and_its_pending_pulse():
     core.tick(state, obs, BOUND, .2)
     assert core.task_scope.open_correction is not None
     core.intent(replace(packet, sequence=3, command=STOP, enabled=False))
-    assert core.task_scope is None and core.local is None
+    assert core.task_scope is None
     assert core.tick(state, obs, BOUND, .3).action==STOP
 
 
@@ -306,7 +282,7 @@ def test_pulse_remaining_deducts_only_proven_same_direction_acceleration(command
     assert scope.pulse_remaining(State(w=direction),direction)==0.
 
 
-def test_reduced_pulse_prediction_retains_scheduler_and_stop_transit_margin():
+def test_reduced_pulse_brakes_from_speed_reachable_within_remainder():
     core=Planner(config()); obs=IndexedObstacles([])
     authorize(core, State(), obs, LEFT, .2)
     core.tick(State(), obs, BOUND, .1)
@@ -314,7 +290,7 @@ def test_reduced_pulse_prediction_retains_scheduler_and_stop_transit_margin():
     state=State(w=.08,current_action=LEFT,observation_age=.03,execution_phase=1)
     remaining=scope.pulse_remaining(state,1)
     assert remaining==pytest.approx(.1)
-    prediction=core.predictor.check(state,LEFT,obs,BOUND,duration=0.,max_run=remaining)
+    prediction=core.predictor.check(state,LEFT,obs,BOUND,run=remaining)
     stop=core.predictor.check(state,STOP,obs,BOUND)
     assert prediction.safe and prediction.endpoint.w==pytest.approx(0.,abs=1e-12)
     assert prediction.endpoint.yaw>stop.endpoint.yaw

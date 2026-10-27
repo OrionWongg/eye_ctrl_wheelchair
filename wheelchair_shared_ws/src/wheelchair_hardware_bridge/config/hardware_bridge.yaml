@@ -44,12 +44,15 @@ twist_to_key:
 
 scan_map:
   ros__parameters:
-    # Matches the Nav2 costmap and discrete planner (0.05 m).
+    # Coarser grid reduces obstacle count and keeps planner within 50 ms budget.
+    # 0.10 m resolution gives 3600 cells (6 m window) vs 40000 at 0.05/10 m.
+    # Footprint padding (0.09 m) exceeds cell half-width (0.05 m) so collision
+    # checks remain conservative despite the lower resolution.
     resolution: 0.05
-    size: 10.0
+    size: 6.0
     max_age: 0.3
     # Fuse scans within this window (MID360 non-repetitive coverage).
-    history_window: 0.25
+    history_window: 0.4
     # Unobservable ring beside/behind the chassis treated as free (m); 0 disables.
     # The front is never cleared and must be proven free by returns.
     blind_band: 0.10

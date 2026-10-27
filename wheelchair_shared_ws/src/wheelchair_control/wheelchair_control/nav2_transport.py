@@ -89,20 +89,19 @@ class Nav2PathClient:
         return (self.valid and self.guard.fresh(now) and now-self.grid_at<self.node.cfg.costmap_timeout
                 and -.05<=self.ros_now()-self.grid_stamp<self.node.cfg.costmap_timeout)
 
-    def request(self,task_id,start,goals,max_length,band=0.,allow_detour=True,corridor_origin=None):
+    def request(self,task_id,start,goals,max_length,allow_detour=True):
         from geometry_msgs.msg import Pose2D
         self.counter+=1;token=self.counter
         m=self.kind.Request();m.header.frame_id='odom';m.header.stamp=self.node.get_clock().now().to_msg()
         m.task_id=task_id;m.request_id=token;m.start=Pose2D(x=float(start[0]),y=float(start[1]),theta=float(start[2]))
         m.goals=[Pose2D(x=float(p[0]),y=float(p[1]),theta=float(p[2])) for p in goals]
-        m.max_path_length=float(max_length);m.corridor_half_width=float(band)
-        if band and corridor_origin is None:raise ValueError('Corridor constraint requires an explicit centerline')
-        origin=corridor_origin or (0.,0.,0.)
-        m.corridor_origin=Pose2D(x=float(origin[0]),y=float(origin[1]),theta=float(origin[2]))
+        # No corridor band: the service field stays zero (unconstrained).
+        m.max_path_length=float(max_length);m.corridor_half_width=0.
+        m.corridor_origin=Pose2D(x=0.,y=0.,theta=0.)
         m.allow_detour=allow_detour
         self.last_report=dict(request_id=token,task_id=task_id,start=start,goals=goals,
             frame_id=m.header.frame_id,max_path_length=max_length,allow_detour=allow_detour,
-            corridor_origin=origin,corridor_half_width=band,request_stamp=self.ros_now(),
+            request_stamp=self.ros_now(),
             costmap_stamp=self.grid_stamp,reason='REQUESTED')
         self.requests[token]=(self.client.call_async(m),time.monotonic(),task_id)
         return token

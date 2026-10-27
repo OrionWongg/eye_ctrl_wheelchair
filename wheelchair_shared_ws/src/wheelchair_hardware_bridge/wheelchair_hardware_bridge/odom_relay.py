@@ -12,7 +12,8 @@ from rclpy.time import Time
 from rclpy.qos import qos_profile_sensor_data
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu
-from tf2_ros import Buffer, TransformListener, TransformException
+from tf2_ros import Buffer, TransformBroadcaster, TransformListener, TransformException
+from geometry_msgs.msg import TransformStamped
 
 
 def rotation(q):
@@ -69,6 +70,7 @@ class OdomRelay(Node):
             self.declare_parameter(name,value)
         p=lambda name:self.get_parameter(name).value
         self.child=p('child_frame_id');self.tf=Buffer();self.listener=TransformListener(self.tf,self)
+        self.tf_broadcaster=TransformBroadcaster(self)
         self.pub=self.create_publisher(Odometry,p('target_topic'),10)
         self.imu_pub=self.create_publisher(Imu,p('imu_target_topic'),10)
         self.create_subscription(Odometry,p('source_topic'),self.on_odom,qos_profile_sensor_data)
@@ -88,6 +90,16 @@ class OdomRelay(Node):
             t=self.tf.lookup_transform(msg.child_frame_id,self.child,Time())
             out=convert_odom(msg,t.transform);out.child_frame_id=self.child
             self.pub.publish(out)
+            # Broadcast odom→base_link so Nav2 sees the standard REP105 tree.
+            tf=TransformStamped()
+            tf.header.stamp=out.header.stamp
+            tf.header.frame_id='odom'
+            tf.child_frame_id=self.child
+            tf.transform.translation.x=out.pose.pose.position.x
+            tf.transform.translation.y=out.pose.pose.position.y
+            tf.transform.translation.z=out.pose.pose.position.z
+            tf.transform.rotation=out.pose.pose.orientation
+            self.tf_broadcaster.sendTransform(tf)
         except (TransformException,ValueError) as exc:
             self.get_logger().warning(f'Waiting for valid Odin-to-base extrinsics: {exc}',throttle_duration_sec=5.)
 

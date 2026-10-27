@@ -49,7 +49,7 @@ def main():
                   ros_domain_id=98, partition='wheelchair_intent_eye_validation', cases=[])
     command = ['ros2', 'launch', 'wheelchair_control', 'shared.launch.py',
                'gui:=false', 'input_source:=eye', 'interaction_mode:=intent_confirm',
-               'mode:=corridor_assist', 'scene:=' + args.scene]
+               'mode:=stop_only', 'scene:=' + args.scene]
     process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
     rclpy.init()
     node = Node('intent_eye_validation', parameter_overrides=[Parameter('use_sim_time', value=True)])

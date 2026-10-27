@@ -43,21 +43,22 @@ def test_forward_is_fixed_or_zero():
 
 def test_swept_polygon_rotation_not_point_check():
     p=Predictor(Config())
-    # Footrest corner sweeps into a wall that is clear at initial pose.
-    obs=[box(.52,.53,.12,.10)]
+    # Footrest corner's braking sweep reaches a wall that is clear at initial pose.
+    obs=[box(.52,.49,.12,.10)]
     assert p.check(State(),STOP,obs,BOUND).safe
     assert not p.check(State(),LEFT,obs,BOUND).safe
 
 def test_momentum_and_angular_braking():
     p=Predictor(Config())
-    wall=[box(1.,0,.1,2.)]
+    # 0.372 m/s brakes in 0.138 m: clear at rest, blocked while moving.
+    wall=[box(.75,0,.1,2.)]
     assert p.check(State(),STOP,wall,BOUND).safe
     assert not p.check(State(v=.372,current_action=FORWARD),STOP,wall,BOUND).safe
-    obs=[box(.52,.60,.12,.10)]
+    obs=[box(.52,.49,.12,.10)]
     assert not p.check(State(w=.389,current_action=LEFT),STOP,obs,BOUND).safe
 
 def test_unknown_boundary_is_not_free():
-    small=[(-1,-1),(.8,-1),(.8,1),(-1,1)]
+    small=[(-1,-1),(.7,-1),(.7,1),(-1,1)]
     assert not Predictor(Config()).check(State(),FORWARD,[],small).safe
 
 def test_obstacle_cannot_be_outvoted_by_score():
@@ -146,3 +147,19 @@ def test_stop_timeout_reports_fault_even_user_stop():
     e=Executor(Config());e.request(STOP,0.)
     assert e.tick(3.,.2,0.,True,True)[0]==STOP
     assert e.fault and e.reason=='STOP_TIMEOUT'
+
+def test_prediction_is_braking_distance_only():
+    c=Config(forward_speed=.534,margin=.06);p=Predictor(c)
+    # Forward from rest: the stop zone is swept only by v^2/(2*brake).
+    r=p.check(State(),FORWARD,[],BOUND)
+    assert r.endpoint.x==pytest.approx(.534**2/(2*c.linear_brake))
+    assert r.duration==pytest.approx(.534/c.linear_brake)
+    # run=0 brakes from the measured speed, not the commanded one.
+    rolling=p.check(State(v=.2,current_action=FORWARD),FORWARD,[],BOUND,run=0.)
+    assert rolling.endpoint.x==pytest.approx(.2**2/(2*c.linear_brake))
+    # Stationary STOP checks the current pose only.
+    assert p.check(State(),STOP,[],BOUND).poses==[(0.,0.,0.)]
+    # Obstacle just beyond the braking distance plus margin is clear.
+    front=.55+.534**2/(2*c.linear_brake)+c.margin
+    assert p.check(State(),FORWARD,[box(front+.06,0,.1,2)],BOUND).safe
+    assert not p.check(State(),FORWARD,[box(front+.04,0,.1,2)],BOUND).safe

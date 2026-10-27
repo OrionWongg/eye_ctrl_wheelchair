@@ -1,8 +1,9 @@
 """Hardware launch: real MID360 + Odin sensors → avoidance stack → iPad wheelchair.
 
 Replaces simulation.launch.py.  All nodes run with use_sim_time:=false.
-Starts bridge nodes (cloud_to_scan, odom_relay, twist_to_key) then the
-full wheelchair_control stack with eye input and real-hardware output.
+start_sensors.sh owns the drivers, mounting TF, body filter and the single
+odom_relay (odom→base_link); this launch starts cloud_to_scan, twist_to_key,
+then the full wheelchair_control stack with eye input and real-hardware output.
 
 Usage:
   ros2 launch wheelchair_hardware_bridge hardware.launch.py [args]
@@ -17,7 +18,6 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument, LogInfo,
-    OpaqueFunction,
     RegisterEventHandler, EmitEvent,
 )
 from launch.conditions import IfCondition
@@ -26,16 +26,6 @@ from launch.events import Shutdown
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
-
-
-def validate_interaction(context):
-    interaction = LaunchConfiguration('interaction_mode').perform(context)
-    mode = LaunchConfiguration('mode').perform(context)
-    if interaction in ('intent_confirm', 'directional_intent') and mode != 'corridor_assist':
-        raise RuntimeError(
-            'intent_confirm requires mode:=corridor_assist; '
-            'use gaze_joystick for stop_only/bounded_assist')
-    return []
 
 
 def stop_on_child_exit(event, context):
@@ -94,14 +84,11 @@ def generate_launch_description():
         DeclareLaunchArgument('task_max_distance', default_value='3.0'),
         DeclareLaunchArgument('nav2_config',
                               default_value=bridge_share + '/config/nav2_hardware.yaml'),
-        DeclareLaunchArgument('mode', default_value=PythonExpression([
-            "'corridor_assist' if '", interaction,
-            "' != 'gaze_joystick' else 'stop_only'"])),
+        DeclareLaunchArgument('mode', default_value='stop_only',
+                              choices=['stop_only', 'bounded_assist']),
         DeclareLaunchArgument('config', default_value=PythonExpression([
-            "'", ctrl_share, "/config/narrow_control.yaml' if '", mode,
-            "' == 'corridor_assist' else '", ctrl_share, "/config/control.yaml'"])),
-
-        OpaqueFunction(function=validate_interaction),
+            "'", ctrl_share, "/config/narrow_control.yaml' if '", interaction,
+            "' != 'gaze_joystick' else '", ctrl_share, "/config/control.yaml'"])),
 
         # start_sensors.sh already owns the sensor mounting TF and body filter.
         # Do not start duplicate TF publishers here.
@@ -110,8 +97,6 @@ def generate_launch_description():
         Node(package='wheelchair_hardware_bridge', executable='cloud_to_scan',
              name='cloud_to_scan', parameters=[bridge_cfg,
                  {'lidar_mode': ParameterValue(lidar_mode, value_type=str)}], output='screen'),
-        Node(package='wheelchair_hardware_bridge', executable='odom_relay',
-             name='odom_relay', parameters=[bridge_cfg], output='screen'),
         Node(package='wheelchair_hardware_bridge', executable='twist_to_key',
              name='twist_to_key', condition=IfCondition(output_enabled), parameters=[bridge_cfg], output='screen'),
 
@@ -188,6 +173,11 @@ def generate_launch_description():
                          {'use_sim_time': False,
                           'allow_dynamic_map': True,
                           'mode': mode,
+                          # Keyboard runs hold-to-run: a stopped A/D turns while
+                          # held. Eye input keeps one bounded heading per gesture.
+                          'turn_mode': PythonExpression([
+                              "'continuous' if '", LaunchConfiguration('input_source'),
+                              "' == 'keyboard' else 'fixed'"]),
                           'path_planner_backend': PythonExpression([
                               "'smac_lattice' if '", path_planner,
                               "' == 'smac_lattice' else 'nav2_dwb'"]),

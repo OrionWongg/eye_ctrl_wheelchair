@@ -8,4 +8,4 @@
 
 验证：31 项硬件桥接测试通过，含真实 ROS 话题输入测试：原始点云不能触发转换、只到达一台过滤点云不会发布、两台过滤点云到达后输出保留外部障碍且沿用最旧时间戳。已在仓库内构建。检查时 ROS 查询未发现 cloud_to_scan 节点及 filtered 话题，没有进行现场运动验收。
 
-生效：先启动 `/home/whill/sensor_visualization/start_sensors.sh`（包含 body_cloud_filter），再启动仓库内 `scripts/run_hardware_keyboard.sh`。已经运行的转换节点需要退出并重启。可用 `ros2 node info /cloud_to_scan` 检查订阅话题。
+生效：先启动 `./scripts/start_sensors.sh`（包含 body_cloud_filter），再启动仓库内 `scripts/run_hardware_keyboard.sh`。已经运行的转换节点需要退出并重启。可用 `ros2 node info /cloud_to_scan` 检查订阅话题。

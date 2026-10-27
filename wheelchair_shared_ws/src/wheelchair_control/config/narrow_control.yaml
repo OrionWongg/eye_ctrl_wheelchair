@@ -2,9 +2,9 @@
   ros__parameters:
     use_sim_time: true
     footprint: [-0.45, -0.30, 0.55, -0.30, 0.55, 0.30, -0.45, 0.30]
-    forward_speed: 0.372
-    left_speed: 0.389
-    right_speed: 0.403
+    forward_speed: 0.534
+    left_speed: 0.8
+    right_speed: 0.8
     linear_accel: 0.6
     angular_accel: 0.8
     linear_brake: 0.5
@@ -16,28 +16,18 @@
     period: 0.05
     startup_delay: 0.12
     minimum_action: 0.30
+    # Stop zone = footprint + margin; the braking check sweeps it to rest.
     margin: 0.06
-    model_error: 0.025
-    step: 0.025
     assist_angle: 0.2617993877991494
     assist_lateral: 0.25
     assist_duration: 2.0
     assist_prediction: 3.0
     turn_segment: 0.30
     stop_dwell: 0.15
-    mode: corridor_assist
-    # Known Gazebo geometry only. Real hardware needs new measurements.
-    comfort_distance: 0.05
     micro_turn_min: 0.10
-    corridor_heading_limit: 0.4363323129985824
-    corridor_correction_angle: 0.10471975511965978
-    corridor_heading_enter: 0.013962634015954637
-    corridor_min_improvement: 0.006981317007977318
-    corridor_center_tolerance: 0.035
-    corridor_lateral_limit: 0.25
-    corridor_max_width: 1.5
-    passage_entry_distance: 1.5
-    corridor_side_opening_max: 1.5
+    path_correction_angle: 0.10471975511965978
+    path_heading_deadband: 0.013962634015954637
+    turn_min_improvement: 0.006981317007977318
     # Intent-confirm endpoint tolerance and hard angular authorization.
     task_heading_tolerance: 0.03490658503988659
     task_heading_limit: 0.4363323129985824

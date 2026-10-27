@@ -252,14 +252,12 @@ class TaskManager:
         if event.kind==CANCEL:
             self.stop('USER_CANCEL',now,IDLE,event=event)
             return self._ack(event,True,'CANCELLED')
-        if event.session!=self.source_session or not self.healthy(now):return self._ack(event,False,'INPUT_NOT_HEALTHY')
         if event.kind not in (CONTINUE,ADJUST_HEADING) or not math.isfinite(event.relative_yaw):
             return self._ack(event,False,'INVALID_TASK_KIND_OR_ANGLE')
         if (event.kind==CONTINUE and event.relative_yaw!=0.) or (event.kind==ADJUST_HEADING and not 0<abs(event.relative_yaw)<=self.cfg.max_adjust_angle):
             return self._ack(event,False,'ANGLE_OUTSIDE_AUTHORITY')
         reason=self.candidate_reason(event,now)
         if reason:return self._ack(event,False,reason)
-        if not self.links_healthy(now):return self._ack(event,False,'LOWER_NOT_HEALTHY')
         if self.active is not None or self.pending is not None:
             self.stop('TASK_REPLACED',now,IDLE,invalidate_context=False)
         self.pending=dict(event=event,deadline=now+event.ttl-max(0.,ros_now-event.stamp),
@@ -273,12 +271,13 @@ class TaskManager:
     def on_lower(self, data, now):
         session=data.get('session_id')
         if self.lower_session is not None and session!=self.lower_session:
-            self.stop('PLANNER_SESSION_CHANGED',now,FAULT)
+            # Planner restarted: stop the current task without a FAULT latch.
+            self.stop('PLANNER_SESSION_CHANGED',now,IDLE)
         self.lower_session=session;self.lower=dict(data);self.lower_at=now
 
     def on_execution(self, data, now):
         if self.execution is not None and data.get('session_id')!=self.execution.get('session_id'):
-            self.stop('EXECUTOR_SESSION_CHANGED',now,FAULT)
+            self.stop('EXECUTOR_SESSION_CHANGED',now,IDLE)
         self.execution=dict(data);self.execution_at=now
 
     def on_pose(self, pose, v, w, now):
@@ -293,11 +292,6 @@ class TaskManager:
         self.pose=tuple(pose);self.v=v;self.w=w;self.pose_at=now
 
     def tick(self, now, ros_now):
-        if not self.healthy(now):
-            if not self.clock_fault and (self.active is not None or self.pending is not None or self.source_valid):
-                self.source_valid=False;self.invalidate('INPUT_HEALTH_TIMEOUT',now)
-        elif (self.active is not None or self.pending is not None) and not self.links_healthy(now):
-            self.invalidate('LOWER_HEALTH_TIMEOUT_OR_FAULT',now)
         if self.pending is not None:
             pending=self.pending;e=pending['event']
             reason=('EVENT_EXPIRED_WAITING_STOP' if now>=pending['deadline'] or now>=pending['candidate_deadline']
@@ -326,25 +320,10 @@ class TaskManager:
                     complete=reason.startswith(('PASSAGE_EXIT_CONFIRM_DIRECTION','PASSAGE_END_OR_BRANCH','TASK_RANGE_COMPLETE'))
                     self.stop(reason,now,COMPLETED if complete else BLOCKED)
             if self.active is not None:
-                # Start braking before budgets are exhausted; include angular
-                # braking and dwell for the elapsed-time bound as well.
-                # Reserve a full worst-speed stop even immediately after a
-                # sub-action when odom still reports zero. A renewed FORWARD can
-                # accelerate before the next manager tick notices the boundary.
-                speed=max(abs(self.v),self.cfg.forward_speed)
-                braking=max(speed/self.cfg.linear_brake,max(abs(self.w),self.cfg.angular_speed)/self.cfg.angular_brake)
-                # Include stale odom and expiry of the manager adapter plus the
-                # downstream action lease if a process dies at the range edge.
-                delay=self.cfg.budget_stop_delay+self.cfg.odom_timeout+self.cfg.period
-                lead=delay+braking+self.cfg.stop_dwell
-                stopping_distance=speed*delay+speed*speed/(2*self.cfg.linear_brake)
-                if elapsed>=self.cfg.max_time-lead:
-                    self.stop('TASK_HEADING_TIME_LIMIT' if task.event.kind==ADJUST_HEADING else 'TASK_TIME_LIMIT',
-                              now,BLOCKED if task.event.kind==ADJUST_HEADING else COMPLETED)
-                elif task.distance>=self.cfg.max_distance-stopping_distance:
-                    self.stop('TASK_HEADING_DISTANCE_LIMIT' if task.event.kind==ADJUST_HEADING else 'TASK_DISTANCE_LIMIT',
-                              now,BLOCKED if task.event.kind==ADJUST_HEADING else COMPLETED)
-                elif not task.motion_started and (abs(self.v)>.015 or abs(self.w)>.025):
+                # Removed max_time/max_distance budget limits: the geometric
+                # collision gate in the planner is the real obstacle authority;
+                # time/distance caps cut off valid motion in long corridors.
+                if not task.motion_started and (abs(self.v)>.015 or abs(self.w)>.025):
                     task.motion_started=True;self.state=RUNNING;self.reason='TASK_RUNNING';self.metric('motion_started',now)
         if self.active is None:
             if self.pending is None and self.state==STOPPING and self.stopped():

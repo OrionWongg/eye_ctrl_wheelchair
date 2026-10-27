@@ -25,7 +25,7 @@ class TurnAdjustment:
 
     def begin(self,reason):
         nav=self.nav
-        if (reason not in TURN_BLOCKED or self.active or self.used or nav.entry is not None
+        if (reason not in TURN_BLOCKED or self.active or self.used
                 or nav.phase not in ('OPEN_HEADING','TURN_AROUND') or nav.goal is None):return False
         self.target=nav.goal[2]
         nav.cancel();nav.follower=None
@@ -50,7 +50,7 @@ class TurnAdjustment:
         self.nav.goal=goals[-1]
         if self.nav.provider:
             self.pending=self.nav.provider.request(self.nav.task_id,state.pose,goals,
-                self.cfg.turn_adjust_distance+.01,0.,allow_detour=False)
+                self.cfg.turn_adjust_distance+.01,allow_detour=False)
         else:self.pending=direct_path(state.pose,goals)
 
     def pure_plan(self,path,obstacles,boundary):
@@ -78,17 +78,36 @@ class TurnAdjustment:
     def valid_path(self,path,state):
         try:parts=segments(path)
         except ValueError:return False
+        # The planner may insert tiny in-place TURNs (< 0.01 rad, odom noise) to
+        # align before or after the DRIVE. Drop only those, so e.g.
+        # [turn, DRIVE, -turn, TURN] is judged as [DRIVE, TURN]; real opposite
+        # turns are never merged away.
+        parts=[p for p in parts if p.kind!='TURN' or abs(p.angle)>=.01]
         if len(parts)!=2 or [p.kind for p in parts]!=['DRIVE','TURN']:return False
         a,b=parts;goal=self.point(self.request_distance,self.target)
-        if math.dist(path[0][:2],state.pose[:2])>.005:return False
-        if abs(wrap(path[0][2]-state.yaw))>.005:return False
-        if math.dist(a.end[:2],goal[:2])>.005 or math.dist(b.end[:2],goal[:2])>.005:return False
-        if abs(wrap(b.end[2]-self.target))>.005:return False
-        if abs(wrap(a.start[2]-self.origin[2]))>.005:return False
-        expected=abs(wrap(self.target-self.origin[2]))
-        if abs(abs(b.angle)-expected)>.005:return False
-        if not self.nav.uturn and b.angle*wrap(self.target-self.origin[2])<=0:return False
+        if math.dist(path[0][:2],state.pose[:2])>.02:return False
+        if abs(wrap(path[0][2]-state.yaw))>.05:return False
+        # goal position and final yaw tolerance: 0.02 m / 0.02 rad (robot stopped, small positional drift ok)
+        if math.dist(a.end[:2],goal[:2])>.02 or math.dist(b.end[:2],goal[:2])>.02:return False
+        if abs(wrap(b.end[2]-self.target))>.02:return False
+        # a.start[2] is exactly what the planner used as start yaw; check it matches
+        # current state within the same tolerance already applied to path[0] above.
+        if abs(wrap(a.start[2]-self.origin[2]))>.05:return False
+        # expected turn angle measured from the actual path start, not origin, because
+        # the planner computed the arc from a.start[2], not from self.origin[2].
+        expected=abs(wrap(self.target-a.start[2]))
+        if abs(abs(b.angle)-expected)>.05:return False
+        if not self.nav.uturn and b.angle*wrap(self.target-a.start[2])<=0:return False
         return math.dist(a.start[:2],a.end[:2])<=self.cfg.turn_adjust_distance+.005
+
+    def describe(self,path,state):
+        """Diagnostic only: why a service path was rejected."""
+        try:parts=[(p.kind,[round(x,4) for x in p.start],[round(x,4) for x in p.end],round(p.angle,4))
+                   for p in segments(path)]
+        except ValueError as error:parts=str(error)
+        return dict(poses=len(path),first=[round(x,4) for x in path[0]],last=[round(x,4) for x in path[-1]],
+                    state=[round(x,4) for x in state.pose],origin=[round(x,4) for x in self.origin],
+                    target=round(self.target,4),request_distance=round(self.request_distance,4),segments=parts)
 
     def tick(self,state,obstacles,boundary,now,stopped):
         c=self.cfg;nav=self.nav
@@ -126,7 +145,9 @@ class TurnAdjustment:
                     self.phase='SELECT';return Decision(STOP,'ASSISTING','TURN_ADJUST_SEARCH')
                 # Transport/health/protocol failures are not geometric retries.
                 return nav.owner.trip('PATH_'+str(value))
-            if not self.valid_path(value,state):return nav.owner.trip('INVALID_TURN_ADJUST_PATH')
+            if not self.valid_path(value,state):
+                nav.owner.last_diagnostics['turn_adjust_invalid']=self.describe(value,state)
+                return nav.owner.trip('INVALID_TURN_ADJUST_PATH')
             if self.phase=='CHECK_STOP_TOLERANCE':
                 self.request(state,self.distance,'PLAN_COMBINATION')
                 return Decision(STOP,'ASSISTING','TURN_ADJUST_SEARCH')
@@ -157,7 +178,7 @@ class TurnAdjustment:
         # Bound this renewed command's actual TTL + transport + full stop too,
         # rather than demanding a new minimum episode at every renewal.
         if d.action==FORWARD:
-            bound=nav.owner.predictor.check(state,FORWARD,obstacles,boundary,duration=0.)
+            bound=nav.owner.predictor.check(state,FORWARD,obstacles,boundary,run=0.)
             if not bound.safe:return self.fail('STOPPING_ENVELOPE')
             poses=bound.poses
             if not poses or any(math.dist(p[:2],self.origin[:2])>c.turn_adjust_distance+c.nav_position_tolerance for p in poses):

@@ -74,7 +74,7 @@ def run_case(name, output):
                   ros_domain_id=96, partition=case_env['IGN_PARTITION'], cases=[])
     process = subprocess.Popen(['ros2', 'launch', 'wheelchair_control', 'shared.launch.py',
                                 'gui:=false', 'interaction_mode:=intent_confirm',
-                                'input_source:=keyboard', 'mode:=corridor_assist', 'scene:=' + scene,
+                                'input_source:=keyboard', 'mode:=stop_only', 'scene:=' + scene,
                                 'task_max_time:='+('3.0' if name=='time_budget' else '10.0')],
                                stdout=log, stderr=subprocess.STDOUT, start_new_session=True,env=case_env)
     source_process = None

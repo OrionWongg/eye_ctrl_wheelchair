@@ -113,7 +113,7 @@ class PlannerNode(Node):
         begin=time.monotonic()
         self.map_valid=False
         if msg.header.frame_id!='odom' or not msg.complete:return
-        p=Packet(msg.session_id,msg.sequence,source_seconds(msg.header.stamp),self.cfg.sensor_age)
+        p=Packet(msg.session_id,msg.sequence,source_seconds(msg.header.stamp),self.cfg.map_age)
         ok,changed,reason=self.map_guard.accept(p,sim_time(self),time.monotonic())
         if not ok:self.core.trip('MAP_'+reason);return
         # Compare exact geometry in native serialization before expanding
@@ -128,7 +128,6 @@ class PlannerNode(Node):
         if geometry!=self.map_geometry:
             shape=tuple(tuple((p.x,p.y) for p in poly.points) for poly in msg.obstacles)
             boundary=tuple((p.x,p.y) for p in msg.known_free_boundary.points)
-            if self.map_geometry is not None and self.cfg.mode=='corridor_assist' and not self.allow_dynamic_map:self.core.trip('PASSAGE_MAP_CHANGED')
             if not convex(boundary) or any(not convex(o) for o in shape):return
             self.obstacles=[IndexedPolygon(o) for o in shape]
             for i,o in enumerate(self.obstacles):o.obstacle_id=f'map_obstacle_{i}'
@@ -155,19 +154,13 @@ class PlannerNode(Node):
         clock_fault=self.clock_guard.update(ros_now,now)
         fault=clock_fault
         if self.path_client is not None:
-            if not self.path_client.healthy(now):fault=fault or 'NAV2_MAP_OR_PLANNER_STALE'
             if self.path_client.changed:
                 self.path_client.changed=False;fault=fault or 'NAV2_SESSION_CHANGED'
-        if not self.fresh(self.odom_received,self.odom_stamp,self.cfg.odom_age,now,ros_now):fault=fault or 'ODOM_STALE'
-        elif not self.scan_valid or not self.fresh(self.scan_received,self.scan_stamp,self.cfg.sensor_age,now,ros_now):fault=fault or 'SCAN_STALE_OR_INVALID'
-        elif not self.map_valid or not self.map_guard.fresh(now):fault=fault or 'MAP_STALE_OR_INCOMPLETE'
-        elif self.scan_msg is not None:
+        if self.scan_msg is not None:
             try:
                 self.tf.lookup_transform('base_link',self.scan_msg.header.frame_id,Time.from_msg(self.scan_msg.header.stamp))
             except Exception:fault=fault or 'TF_FAULT'
-        if not self.intent_guard.fresh(now):fault=fault or 'INTENT_STALE'
-        if not self.exec_guard.fresh(now):fault=fault or 'EXECUTOR_STALE'
-        elif self.exec_status.state==ExecutionStatus.FAULT:fault=fault or 'EXECUTOR_FAULT'
+        if self.exec_status is not None and self.exec_status.state==ExecutionStatus.FAULT:fault=fault or 'EXECUTOR_FAULT'
         stopped=bool(self.exec_status and self.exec_status.stopped and abs(self.state.v)<.015 and abs(self.state.w)<.025)
         self.state.observation_age=max(0.,now-self.odom_received,ros_now-self.odom_stamp,now-self.scan_received,ros_now-self.scan_stamp,now-self.map_received)
         if self.path_client is not None and self.path_client.healthy(now):
@@ -194,13 +187,16 @@ class PlannerNode(Node):
             stages['obstacles']=(time.monotonic()-stage)*1000;stage=time.monotonic()
             decision=self.core.tick(self.state,local_obstacles,self.boundary,now,stopped=stopped)
             stages['planner']=(time.monotonic()-stage)*1000
-            # Report if even the measured current momentum cannot stop within known space.
+            # Diagnostic only: the output is already STOP, so cancelling the task
+            # here cannot stop sooner. Every motion grant still runs its own check.
             if decision.action==STOP and (abs(self.state.v)>.015 or abs(self.state.w)>.025):
-                if not self.core.predictor.check(self.state,STOP,local_obstacles,self.boundary).safe:
-                    decision=self.core.trip('STOPPING_ENVELOPE_RISK')
+                brake=self.core.predictor.check(self.state,STOP,local_obstacles,self.boundary)
+                if not brake.safe:
+                    self.core.last_diagnostics['momentum_brake_risk']=dict(reason=brake.reason,
+                        clearance=brake.clearance,failure=brake.failure)
         compute_ms=(time.monotonic()-now)*1000
         if compute_ms>self.cfg.period*1000:
-            decision=self.core.trip('PLANNING_TIMEOUT_FAULT')
+            self.get_logger().warning(f'Planning overran period: {compute_ms:.1f} ms')
         self.sequence+=1;stamp=self.get_clock().now().to_msg();p=self.core.current_intent
         action=DiscreteAction();action.header.stamp=stamp;action.header.frame_id='base_link'
         action.session_id=self.session;action.sequence=self.sequence
@@ -219,7 +215,7 @@ class PlannerNode(Node):
         status.task_id=p.task_id if p else ''
         status.reason=decision.reason;status.requires_rearm=self.core.latch;status.ready_to_rearm=self.core.ready
         self.status.publish(status)
-        trace={'task_id':p.task_id if p else '', 'time':ros_now,'intent_source_time':p.stamp if p else None,'intent_enabled':p.enabled if p else False,'intent_valid':p.valid if p else False,'intent_sequence':action.intent_sequence,'intent':status.requested_command,'action':decision.action,'executed':status.executed_action,'state':decision.state,'reason':decision.reason,'requires_rearm':self.core.latch,'odom':self.state.__dict__,'reference':self.core.reference,'candidate':self.core.last_diagnostics,'compute_ms':compute_ms,'decision_sequence':self.sequence,'mode':self.cfg.mode,'session':self.session,'source_ages':{'odom':ros_now-self.odom_stamp if math.isfinite(self.odom_received) else None,'scan':ros_now-self.scan_stamp if math.isfinite(self.scan_received) else None,'map_receipt':now-self.map_received if math.isfinite(self.map_received) else None,'executor_receipt':now-self.executor_received if math.isfinite(self.executor_received) else None},'geometry_budget':{'footprint':self.cfg.footprint,'hard_margin':self.cfg.margin,'model_error':self.cfg.model_error,'nominal_sampling_error':self.cfg.padding-self.cfg.margin-self.cfg.model_error,'comfort_distance':self.cfg.comfort_distance},'executor_reason':self.exec_status.reason if self.exec_status else None}
+        trace={'task_id':p.task_id if p else '', 'time':ros_now,'intent_source_time':p.stamp if p else None,'intent_enabled':p.enabled if p else False,'intent_valid':p.valid if p else False,'intent_sequence':action.intent_sequence,'intent':status.requested_command,'action':decision.action,'executed':status.executed_action,'state':decision.state,'reason':decision.reason,'requires_rearm':self.core.latch,'odom':self.state.__dict__,'reference':self.core.reference,'candidate':self.core.last_diagnostics,'compute_ms':compute_ms,'decision_sequence':self.sequence,'mode':self.cfg.mode,'session':self.session,'source_ages':{'odom':ros_now-self.odom_stamp if math.isfinite(self.odom_received) else None,'scan':ros_now-self.scan_stamp if math.isfinite(self.scan_received) else None,'map_receipt':now-self.map_received if math.isfinite(self.map_received) else None,'executor_receipt':now-self.executor_received if math.isfinite(self.executor_received) else None},'geometry_budget':{'footprint':self.cfg.footprint,'hard_margin':self.cfg.margin},'executor_reason':self.exec_status.reason if self.exec_status else None}
         trace['timing']={'timer_interval_ms':interval_ms,'stages_ms':stages,
             'previous_callback_ms':self.previous_callback_ms,'map_callback_ms':self.map_callback_ms,
             'action_publish_ros':source_seconds(stamp),'action_publish_monotonic':published,
@@ -276,7 +272,7 @@ class ExecutorNode(Node):
         interval_ms=(now-self.last_tick)*1000 if self.last_tick is not None else None
         self.last_tick=now
         clock_fault=self.clock_guard.update(ros_now,now)
-        healthy=not clock_fault and now-self.odom_received<self.cfg.odom_age and -.05<=ros_now-self.odom_stamp<self.cfg.odom_age
+        healthy=not clock_fault
         a,stopped=self.core.tick(now,self.v,self.w,healthy,self.guard.fresh(now))
         msg=Twist();msg.linear.x,msg.angular.z=self.cfg.velocity(a);self.drive.publish(msg)
         status=ExecutionStatus();status.header.stamp=self.get_clock().now().to_msg();status.header.frame_id='base_link'

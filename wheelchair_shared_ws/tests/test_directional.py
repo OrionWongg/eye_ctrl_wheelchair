@@ -3,106 +3,12 @@ from dataclasses import replace
 import pytest
 from wheelchair_control.direction_manager import *
 from wheelchair_control.direction_input import KeyEvents
-from wheelchair_control.entries import openings, route_clear
-from wheelchair_control.passage import detect
 from wheelchair_control.planner import Planner, State, integrate, toward
 from wheelchair_control.protocol import Packet, STOP, FORWARD
 from wheelchair_control.executor import Executor
 from wheelchair_control.geometry import IndexedObstacles, clearance, transform, wrap
-from test_passage import config, box, BOUND, walls
+from nav_fixtures import config, box, BOUND, walls
 from test_task_manager import feed
-
-
-def door_map(side=1, gaps=((1.,2.4),), width=1.4):
-    wall=width/2
-    obs=[box(-3,10,-wall-.12,-wall)]
-    end=-3.
-    for a,b in gaps:
-        obs.append(box(end,a,wall,wall+.12));end=b
-    obs.append(box(end,10,wall,wall+.12))
-    if side<0:obs=[[(x,-y) for x,y in reversed(o)] for o in obs]
-    return IndexedObstacles(obs)
-
-
-def nav_authorize(core,state,obs,kind=4):
-    core.intent(Packet('manager',1,0.,.25,STOP,False),True)
-    core.tick(state,obs,BOUND,0.)
-    assert core.ready
-    p=Packet('manager',2,0.,.25,FORWARD,True,task_id='nav',task_kind=kind,
-             reference_x=state.x,reference_y=state.y,reference_yaw=state.yaw)
-    core.intent(p)
-    return p
-
-
-@pytest.mark.parametrize('side',[-1,1])
-@pytest.mark.parametrize('gaps',[((1.,2.4),),((.6,1.8),(2.2,3.6)),((1.5,2.5),)])
-def test_entry_geometry_uses_stable_id_and_full_sweep(side,gaps):
-    cfg=config();s=State();obs=door_map(side,gaps)
-    passage,_=detect(s,obs,cfg)
-    candidates=openings(s,obs,passage,side,cfg)
-    assert candidates
-    first=candidates[0]
-    assert first.start==pytest.approx(gaps[0][0])
-    assert first.end==pytest.approx(gaps[0][1])
-    assert first.identity==openings(State(x=.1),IndexedObstacles(reversed(obs)),passage,side,cfg)[0].identity
-    assert route_clear(s,first,obs,BOUND,cfg)
-    assert not openings(State(x=gaps[-1][1]+.1),obs,passage,side,cfg)
-
-
-def test_skip_unreachable_before_lock_but_never_switch_locked_entry():
-    cfg=config();s=State();obs=door_map(gaps=((.7,1.7),(2.,3.4)))
-    obs=IndexedObstacles([*obs,box(.7,1.7,.85,1.1)])
-    core=Planner(cfg);nav_authorize(core,s,obs)
-    core.tick(s,obs,BOUND,.1)
-    assert core.task_scope.entry.start==2.
-    entry=core.task_scope.entry
-    blocked=IndexedObstacles([*obs,box(1.,1.1,-.4,.4)])
-    # No planner re-selection, even with another opening available.
-    core.tick(State(x=.3,v=.372,current_action=FORWARD),blocked,BOUND,.2,stopped=False)
-    assert core.task_scope is None or core.task_scope.entry==entry
-
-
-@pytest.mark.parametrize('side',[-1,1])
-@pytest.mark.parametrize('start_x',[0.,1.35])
-def test_complete_entry_and_continue_without_second_turn(side,start_x):
-    c=config();core=Planner(c);obs=door_map(side);s=State(x=start_x,observation_age=.03,execution_phase=0)
-    packet=nav_authorize(core,s,obs,4 if side>0 else 5)
-    executor=Executor(c);executor.request(STOP,0.);executor.tick(0,0,0,True,True);executor.tick(.2,0,0,True,True)
-    phases=[];ids=set();completed=False
-    for i in range(1,601):
-        now=.2+i*.05
-        core.intent(replace(packet,sequence=i+2,stamp=now,task_elapsed=now))
-        stopped=executor.phase=='STOPPED' and abs(s.v)<.015 and abs(s.w)<.025
-        d=core.tick(s,obs,BOUND,now,stopped=stopped)
-        assert not core.latch,(d,s,phases[-10:])
-        nav=core.task_scope
-        phases.append(nav.phase)
-        if nav.entry:ids.add(nav.entry.identity)
-        max_run=core.last_diagnostics.get('task_pulse_duration') if d.reason=='TASK_HEADING_MICRO_TURN' else None
-        executor.request(d.action,now,max_run=max_run)
-        a,_=executor.tick(now,s.v,s.w,True,True)
-        tv,tw=c.velocity(a)
-        v=toward(s.v,tv,(c.linear_brake if a==STOP else c.linear_accel)*.05)
-        w=toward(s.w,tw,(c.angular_brake if a==STOP else c.angular_accel)*.05)
-        moved=integrate(s,(s.v+v)/2,(s.w+w)/2,.05)
-        s=State(moved.x,moved.y,moved.yaw,v,w,d.action if executor.phase=='STARTING' else a,.03,
-                {'STOPPED':0,'RUNNING':1,'STOPPING':2,'STARTING':3,'FAULT':4}[executor.phase])
-        assert clearance(transform(c.footprint,s.pose),obs,BOUND,c.padding)>c.padding
-        if nav.phase=='CRUISE' and abs(s.y)>2.:
-            completed=True;break
-    assert completed,(s,phases[-10:])
-    assert len(ids)==1 and 'ALIGN_ENTRY' in phases and 'TRAVERSE' in phases
-    assert abs(wrap(s.yaw-side*math.pi/2))<c.task_heading_tolerance
-    assert nav.side==0 and a==FORWARD
-
-
-def test_search_budget_never_refreshed_by_renewals():
-    c=config();core=Planner(c);obs=walls(1.4);s=State()
-    p=nav_authorize(core,s,obs)
-    for t in (.1,1.,4.,8.2):
-        core.intent(replace(p,sequence=int(t*10)+3,task_elapsed=t))
-        core.tick(s,obs,BOUND,t)
-    assert core.task_scope.phase=='CRUISE' and core.task_scope.side==0
 
 
 def manager_start():
@@ -196,34 +102,3 @@ def test_completed_event_retry_and_mutated_id_never_create_another_turn():
     feed(m,.8)
     assert m.on_event(Event('source',3,.8,1.5,PREFER_LEFT),.8,.8).accepted
     assert m.active is not task
-
-
-def test_open_interpretation_is_locked_even_if_corridor_appears():
-    core=Planner(config());empty=IndexedObstacles([]);s=State(yaw=.05)
-    nav_authorize(core,s,empty,3)
-    assert core.tick(s,empty,BOUND,.1).action==FORWARD
-    reference=core.task_scope.reference
-    core.tick(s,walls(1.3),BOUND,.2)
-    assert core.task_scope.passage is None and core.task_scope.reference==reference
-
-
-def test_search_distance_expires_independently_of_time():
-    core=Planner(config());obs=walls(1.4);s=State()
-    nav_authorize(core,s,obs)
-    core.tick(s,obs,BOUND,.1)
-    for i in range(1,111):
-        core.tick(State(x=i*.028,v=.372,current_action=FORWARD,observation_age=.03,execution_phase=1),
-                  obs,BOUND,.1+i*.05,stopped=False)
-    assert core.task_scope.phase=='CRUISE' and core.task_scope.side==0
-
-
-def test_straight_door_cruise_does_not_require_exit_confirmation():
-    core=Planner(config());obs=IndexedObstacles([box(1.,1.3,.5,4.),box(1.,1.3,-4.,-.5)])
-    nav_authorize(core,State(),obs,3)
-    core.tick(State(),obs,BOUND,.1)
-    assert core.task_scope.passage.kind=='door'
-    for i in range(1,111):
-        d=core.tick(State(x=i*.02,v=.372,current_action=FORWARD,observation_age=.03,execution_phase=1),
-                    obs,BOUND,.1+i*.05,stopped=False)
-        assert not core.latch,(i,d)
-    assert d.action==FORWARD and core.task_scope.phase=='CRUISE'

@@ -17,8 +17,6 @@
     startup_delay: 0.12
     minimum_action: 0.30
     margin: 0.06
-    model_error: 0.025
-    step: 0.025
     assist_angle: 0.2617993877991494
     assist_lateral: 0.25
     assist_duration: 2.0

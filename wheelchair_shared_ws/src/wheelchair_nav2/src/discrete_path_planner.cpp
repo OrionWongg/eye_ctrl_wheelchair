@@ -60,11 +60,8 @@ class DiscretePlanner : public rclcpp::Node {
     }
     auto points=declare_parameter<std::vector<double>>("footprint",{-.45,-.30,.55,-.30,.55,.30,-.45,.30});
     if(points.size()<6 || points.size()%2) throw std::invalid_argument("Invalid footprint");
-    double radius=0;
-    for(size_t i=0;i<points.size();i+=2) {geometry_msgs::msg::Point p;p.x=points[i];p.y=points[i+1];footprint_.push_back(p);radius=std::max(radius,std::hypot(p.x,p.y));}
-    double padding=parameter("margin",.06)+parameter("model_error",.025)+(forward_+radius*std::max(left_,right_))*parameter("step",.025)/2;
-    comfort_footprint_=rounded_padding(footprint_,padding+parameter("free_space_clearance",.08));
-    footprint_=rounded_padding(footprint_,padding);
+    for(size_t i=0;i<points.size();i+=2) {geometry_msgs::msg::Point p;p.x=points[i];p.y=points[i+1];footprint_.push_back(p);}
+    footprint_=rounded_padding(footprint_,parameter("margin",.06));
     timeout_=parameter("search_time_limit",.25);map_timeout_=parameter("costmap_timeout",.5);
     obstacle_weight_=parameter("obstacle_cost_weight",1.0);
     heuristic_weight_=parameter("heuristic_weight",4.0);
@@ -135,13 +132,6 @@ class DiscretePlanner : public rclcpp::Node {
     // A locked doorway is a route constraint, not merely an endpoint. Searching
     // around another doorway would silently change the user's selected entry.
     if(!allow_detour)return false;
-    struct Restore {nav2_costmap_2d::Footprint &value;nav2_costmap_2d::Footprint old;~Restore(){value=old;}} restore{footprint_,footprint_};
-    // A free-space detour reserves tracking error around bends. Straight
-    // corridors/doorways still use the exact hard footprint check above.
-    if(comfort_search_) {
-      footprint_=comfort_footprint_;
-      if(!valid(start,origin,band)||!valid(goal,origin,band))footprint_=restore.old;
-    }
     struct Vertex {Pose pose;double cost,length;int parent,action;std::vector<Pose> edge;};
     struct Candidate {double cost;int index;bool operator<(const Candidate &other)const{return cost>other.cost;}};
     std::vector<Vertex> nodes={{start,0,0,-1,0,{start}}};std::priority_queue<Candidate> queue;
@@ -188,7 +178,6 @@ class DiscretePlanner : public rclcpp::Node {
     out.costmap_stamp=map_stamp_;
     const double age=(now()-rclcpp::Time(r.header.stamp)).seconds();if(age<-.05||age>1.){out.reason="STALE_REQUEST";return;}
     auto deadline=begin+std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(timeout_));
-    comfort_search_=r.goals.size()==1 && distance(r.start,r.goals.back())>.2 && r.corridor_half_width==0;
     Pose start=r.start;std::vector<Pose> poses;double remaining=r.max_path_length;
     for(const auto &goal:r.goals) {
       std::vector<Pose> part;
@@ -219,8 +208,6 @@ class DiscretePlanner : public rclcpp::Node {
   std::vector<dwb_msgs::msg::Trajectory2D> primitives_;
   std::unique_ptr<nav2_costmap_2d::Costmap2D> map_;
   nav2_costmap_2d::Footprint footprint_;
-  nav2_costmap_2d::Footprint comfort_footprint_;
-  bool comfort_search_=false;
   rclcpp::Time map_stamp_{0,0,RCL_ROS_TIME};Clock::time_point map_received_;
   double forward_,left_,right_,timeout_,map_timeout_,obstacle_weight_,heuristic_weight_;int max_expansions_;
   std::string session_;uint64_t sequence_=0;

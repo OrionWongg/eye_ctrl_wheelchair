@@ -8,8 +8,8 @@ from wheelchair_control.planner import Planner,State,integrate,toward
 from wheelchair_control.executor import Executor
 from wheelchair_control.protocol import STOP,FORWARD
 from wheelchair_control.geometry import IndexedObstacles,wrap
-from test_passage import config,BOUND,walls
-from test_directional import nav_authorize
+from nav_fixtures import config,BOUND,walls
+from nav_fixtures import nav_authorize
 from test_task_manager import feed
 
 
@@ -93,3 +93,29 @@ def test_fresh_id_with_pre_stop_timestamp_cannot_authorize_turn():
     feed(m,.6)
     ack=m.on_event(Event('source',2,.05,1.5,TURN_AROUND),.6,.6)
     assert not ack.accepted and m.pending is None
+
+
+@pytest.mark.parametrize('kind,sign',[(7,1),(8,-1)])
+def test_continuous_turn_runs_while_held_without_target_or_pulses(kind,sign):
+    from wheelchair_control.protocol import LEFT,RIGHT
+    c=replace(config(),turn_mode='continuous');core=Planner(c);state=State(observation_age=.03,execution_phase=0)
+    obs=IndexedObstacles([]);packet=nav_authorize(core,state,obs,kind)
+    cmd=LEFT if sign>0 else RIGHT
+    # Far beyond the fixed 20 deg target: still turning, never pulsed or completed.
+    for i,yaw in enumerate([0.,.5,1.5,3.,-2.]):
+        core.intent(replace(packet,sequence=i+3,stamp=i*.05,task_elapsed=i*.05))
+        d=core.tick(State(yaw=yaw,w=sign*.8,current_action=cmd,observation_age=.03,execution_phase=1),
+                    obs,BOUND,.1+i*.05,stopped=False)
+        assert (d.action,d.reason)==(cmd,'NAV_CONTINUOUS_TURN') and not core.latch
+
+
+def test_continuous_turn_waits_without_latch_when_blocked():
+    from wheelchair_control.protocol import LEFT
+    c=replace(config(),turn_mode='continuous');core=Planner(c);state=State(observation_age=.03,execution_phase=0)
+    packet=nav_authorize(core,state,IndexedObstacles([]),7)
+    # Footrest corner sweeps into this post during a left turn.
+    post=IndexedObstacles([[(.50,.38),(.60,.38),(.60,.48),(.50,.48)]])
+    d=core.tick(state,post,BOUND,.1)
+    assert (d.action,d.reason)==(STOP,'NAV_TURN_WAIT_CLEARANCE') and not core.latch
+    core.intent(replace(packet,sequence=4,stamp=.15,task_elapsed=.15))
+    assert core.tick(state,IndexedObstacles([]),BOUND,.2).action==LEFT

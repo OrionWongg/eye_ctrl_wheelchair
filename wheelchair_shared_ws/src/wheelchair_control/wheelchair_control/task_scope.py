@@ -1,4 +1,4 @@
-"""Finite, immutable authorization layered over the existing safety predictor.
+"""Finite, immutable authorization layered over the braking-distance safety check.
 
 The manager owns elapsed time and accumulated distance. This layer owns the
 fixed geometric reference and the heading endpoint; input renewals cannot reset
@@ -91,45 +91,39 @@ class TaskScope:
                 abs(lateral) <= c.assist_lateral+1e-9)
 
     def continue_tick(self, state, obstacles, boundary, now, stopped):
-        from .passage import PassageController
+        from .planner import Decision
         p = self.owner
         if not self.within_continue_scope(state.pose):
             return p.trip('TASK_DIRECTION_OR_LATERAL_LIMIT')
-        if p.local is None:
-            p.local = PassageController(p, task_scoped=True)
-            p.local.request_heading = self.reference[2]
-        # Perform initial discovery exactly once before choosing open-room
-        # heading hold. Corrections preserve this controller and its empty scope.
-        if p.local.discovery_done and p.local.passage is None:
-            error = wrap(self.reference[2]-state.yaw)
-            threshold = max(p.cfg.corridor_heading_enter, p.cfg.task_heading_tolerance)*1.5
-            if self.open_correction is None and abs(error) > threshold:
-                self.open_correction_packet = Packet(
-                    'internal', 0, 0., .15, LEFT if error>0 else RIGHT, True,
-                    task_id=self.task_id+'/heading-hold', task_kind=ADJUST_HEADING,
-                    reference_x=state.x, reference_y=state.y, reference_yaw=state.yaw,
-                    target_yaw=self.reference[2])
-                self.open_correction = TaskScope(p, self.open_correction_packet)
-                self.open_correction.force_micro = True
-            if self.open_correction is not None:
-                decision = self.open_correction.tick(self.open_correction_packet, state,
-                                                     obstacles, boundary, now, stopped)
-                # An internal correction never completes the parent CONTINUE.
-                p.last_diagnostics['task_id'] = self.task_id
-                p.last_diagnostics['task_reference'] = self.reference
-                if decision.reason == 'TASK_HEADING_COMPLETED':
-                    from .planner import Decision
-                    self.open_correction = None
-                    self.open_correction_packet = None
-                    decision = Decision(STOP, 'ASSISTING', 'TASK_CONTINUE_HEADING_ALIGNED')
-            else:
-                decision = p.local.tick(state, obstacles, boundary, now, stopped)
+        # Hold the task heading with internal corrections, then drive straight.
+        error = wrap(self.reference[2]-state.yaw)
+        threshold = max(p.cfg.path_heading_deadband, p.cfg.task_heading_tolerance)*1.5
+        if self.open_correction is None and abs(error) > threshold:
+            self.open_correction_packet = Packet(
+                'internal', 0, 0., .15, LEFT if error>0 else RIGHT, True,
+                task_id=self.task_id+'/heading-hold', task_kind=ADJUST_HEADING,
+                reference_x=state.x, reference_y=state.y, reference_yaw=state.yaw,
+                target_yaw=self.reference[2])
+            self.open_correction = TaskScope(p, self.open_correction_packet)
+            self.open_correction.force_micro = True
+        if self.open_correction is not None:
+            decision = self.open_correction.tick(self.open_correction_packet, state,
+                                                 obstacles, boundary, now, stopped)
+            # An internal correction never completes the parent CONTINUE.
+            p.last_diagnostics['task_id'] = self.task_id
+            p.last_diagnostics['task_reference'] = self.reference
+            if decision.reason == 'TASK_HEADING_COMPLETED':
+                self.open_correction = None
+                self.open_correction_packet = None
+                decision = Decision(STOP, 'ASSISTING', 'TASK_CONTINUE_HEADING_ALIGNED')
         else:
-            decision = p.local.tick(state, obstacles, boundary, now, stopped)
+            result = p.predictor.check(state, FORWARD, obstacles, boundary)
+            p.last_diagnostics['candidate'] = result.summary()
+            if not result.safe:
+                return p.trip('TASK_CONTINUE_BLOCKED')
+            decision = Decision(FORWARD, 'ASSISTING', 'TASK_CONTINUE_FORWARD')
         if decision.action != STOP:
-            # Validate the complete lease-loss and braking path against the
-            # original task band, even when passage correction found a safe wall
-            # clearance. Safe geometry never grants a different direction.
+            # The braking path may never leave the original task band.
             candidate = p.last_diagnostics.get('candidate', {})
             poses = candidate.get('poses', ())
             if not poses or not all(self.within_continue_scope(pose) for pose in poses):
@@ -186,7 +180,7 @@ class TaskScope:
                 return p.trip('TASK_HEADING_OVERSHOOT')
             if self.pulse_origin is not None and self.pulse:
                 improvement = direction*wrap(state.yaw-self.pulse_origin)
-                self.stagnant_pulses = self.stagnant_pulses+1 if improvement<c.corridor_min_improvement else 0
+                self.stagnant_pulses = self.stagnant_pulses+1 if improvement<c.turn_min_improvement else 0
                 p.last_diagnostics['task_heading_stagnant_pulses'] = self.stagnant_pulses
                 hard_limited = abs(wrap(self.target-self.reference[2]))+c.task_heading_tolerance>c.task_heading_limit
                 if improvement<1e-4:
@@ -215,10 +209,10 @@ class TaskScope:
                     if duration<c.micro_turn_min-1e-9 or duration>c.minimum_action+1e-9:
                         continue
                     # Only the previously validated 100/200/300 ms episodes.
-                    # The full lease-loss and braking path must fit both the
-                    # collision map and the original angular authorization.
+                    # The braking path must fit both the collision map and
+                    # the original angular authorization.
                     candidate = p.predictor.check(state, self.command, obstacles, boundary,
-                                                  duration=duration, max_run=duration)
+                                                  run=duration)
                     geometric_candidate = geometric_candidate or candidate.safe
                     if candidate.safe and self.heading_path_authorized(candidate):
                         short = candidate
@@ -241,8 +235,8 @@ class TaskScope:
         brake_angle = (speed+peak)*delay/2+peak*peak/(2*c.angular_brake)
         if remaining <= c.task_heading_tolerance or brake_angle >= self.brake_threshold(remaining):
             return self.brake(now)
-        result = p.predictor.check(state, self.command, obstacles, boundary, duration=0.,
-                                   max_run=self.pulse_remaining(state, direction) if self.pulse else None)
+        result = p.predictor.check(state, self.command, obstacles, boundary,
+                                   run=self.pulse_remaining(state, direction) if self.pulse else 0.)
         p.last_diagnostics['candidate'] = result.summary()
         if not result.safe or not self.heading_path_authorized(result):
             return self.brake(now)

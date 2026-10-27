@@ -21,6 +21,11 @@ from wheelchair_control.nav2_transport import cell_rectangles
 
 # Measured chassis outline in base_link (x_min, x_max, y_min, y_max).
 BODY=(-.45,.55,-.30,.30)
+# Extended self-echo exclusion zone: covers chassis structures that protrude
+# beyond the declared body boundary (rear frame, handrail, etc.) whose laser
+# returns land ~0.60 m behind robot centre.  Applied only to self_hit so that
+# corner_body (free-space marking) stays conservatively bounded by BODY.
+SELF_ECHO=(-.65,.55,-.35,.35)
 
 
 def grid_index(x,y,resolution,size):
@@ -57,6 +62,13 @@ are applied last so a return is never erased by another ray or the footprint.
     cells=np.full((n,n),-1,dtype=np.int8);cells[all_corners(corner_free)|all_corners(corner_body)]=0
     angles=angle_min+np.arange(len(ranges))[valid]*increment+yaw
     hx=x+ranges[valid]*np.cos(angles);hy=y+ranges[valid]*np.sin(angles)
+    # Drop self-hits: returns from the chassis structure at the footprint
+    # edge. The body-cell exclusion above only frees cells whose every
+    # corner lies inside BODY, so edge cells hit by self-returns would
+    # otherwise stay occupied forever and block all motion.
+    hxb=c*(hx-x)+s*(hy-y);hyb=-s*(hx-x)+c*(hy-y)
+    self_hit=(hxb>=SELF_ECHO[0])&(hxb<=SELF_ECHO[1])&(hyb>=SELF_ECHO[2])&(hyb<=SELF_ECHO[3])
+    hx,hy=hx[~self_hit],hy[~self_hit]
     ix=np.floor((hx-origin[0])/resolution).astype(int)
     iy=np.floor((hy-origin[1])/resolution).astype(int)
     inside=(ix>=0)&(ix<n)&(iy>=0)&(iy<n)

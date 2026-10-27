@@ -60,4 +60,42 @@ WHEELCHAIR_ROS_DOMAIN_ID=0 ROS_LOCALHOST_ONLY=0 ./scripts/run_hardware_keyboard.
 本次 33 项硬件桥接测试通过；另行验证 both/201/202 三种模式下两个物理输出节点的启动条件，单雷达均为 false。未启动真实硬件。
 
 
-地面阈值：正常硬件 YAML 与独立 single_lidar_costmap_test.launch.py 均使用 ground_tolerance=0.08，即 base_link Z=[-0.536,-0.376] m 内归为地面。退出并重启控制栈或测试脚本生效；8 cm 容差带内的实物可能被归为地面，不代表可通行高度。旧入口 `/home/whill/sensor_visualization/start_sensors.sh` 已转发到仓库入口，传感器脚本本身不启动地面分离。
+地面阈值：正常硬件 YAML 与独立 single_lidar_costmap_test.launch.py 均使用 ground_tolerance=0.08，即 base_link Z=[-0.536,-0.376] m 内归为地面。退出并重启控制栈或测试脚本生效；8 cm 容差带内的实物可能被归为地面，不代表可通行高度。旧入口 `./scripts/start_sensors.sh` 已转发到仓库入口，传感器脚本本身不启动地面分离。
+
+## TF 结构（Nav2 / REP105）
+
+Odin 驱动的 `send_odom_baselink_tf` 已设为 0，驱动不再发布任何 TF。`odom -> base_link` 由 `odom_relay`（随 `sensors_tf.launch.py` 启动，唯一发布者）根据 `/odin1/odometry_highfreq` 发布；所有传感器静态 TF 直接挂在 `base_link` 下：
+
+```
+map -> odom -> base_link -> lidar / imu / camera_0 / base_footprint / mid360_201_local / mid360_202_local
+```
+
+`map -> odom` 留给后续 SLAM。`hardware.launch.py` 不再启动 `odom_relay`。
+
+## 安全轮廓与规划诊断
+
+正常 start_sensors.sh 现在同时启动只读 navigation_debug，原命令无需追加参数。
+重启传感器入口后，RViz 的 Wheelchair avoidance 组显示规划图、costmap、
+目标箭头、规划路径（绿色，带朝向轴）和实际轨迹（白色）。固定坐标为 odom，
+相机仍跟随 base_footprint。控制栈需另外启动，传感器入口本身不产生运动命令。
+
+sensors.rviz 只保留以下 MarkerArray（Nav2 footprint 与 local costmap 为 Nav2 自带）：
+- hard：最终硬安全边界（停车保护区域），即安全门碰撞检查所用轮廓。
+- navigation_goal：橙色目标朝向箭头。
+- perception_body_mask_not_safety / perception_self_echo_not_safety：点云过滤与二维自身回波排除范围。
+- perception_blind_band_ideal_not_safety：侧后方未知盲区清除的连续几何示意；实际操作以栅格及格中心条件为准。
+
+避障只保留"车体 + margin"一个停车保护区域，预测只计算刹车距离；
+名义车体、模型误差/采样余量、舒适边界、预测采样/包络/终点、碰撞最近点
+和通道边界已从控制逻辑中删除，navigation_debug 不再发布这些话题。
+
+只启动传感器时，轮廓采用已安装默认硬件配置并显示等待控制栈提示；
+收到 decision_trace 后，车体与硬余量取实际决策数据。舒适距离与盲区配置启动时读取；
+修改配置后须重新构建相关包并重启。未收到预测时不生成假预测；
+旧决策超过 0.5 秒标 STALE 并淡化，历史规划路径的年龄在文字中显示。
+纯转向路径位置重合，因此绿色线可能不明显，可看路径朝向轴和目标箭头。
+
+安全图层现已拆为独立 /wheelchair/debug/<namespace> 话题，左侧 Displays
+分别列出中文名称和颜色，可单独开关并展开 Topic 查看对应关系。
+默认不显示画面文字；需要状态时手动启用“控制状态文字 [默认关闭]”。
+原聚合 /wheelchair/debug/markers 保留供已有诊断视图使用。

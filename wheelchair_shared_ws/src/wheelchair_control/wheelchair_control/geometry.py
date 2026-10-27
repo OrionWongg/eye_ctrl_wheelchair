@@ -32,6 +32,7 @@ def transform(poly,pose):
     return [(x+c*px-s*py,y+s*px+c*py) for px,py in poly]
 def wrap(t): return math.atan2(math.sin(t),math.cos(t))
 def clearance(poly,obstacles,boundary,margin):
+    if not boundary: return -1.
     if any(not inside(p,boundary) for p in poly): return -1.
     gap=min(point_segment(p,a,b) for p in poly for a,b in edges(boundary))
     if gap<=margin: return gap
@@ -102,17 +103,7 @@ class IndexedObstacles(tuple):
         return obj
 
 
-def collision_diagnostic(poly,obstacles,boundary,padding):
-    from shapely.ops import nearest_points
-    shape=Polygon(poly);edge=Polygon(boundary).boundary
-    target=edge;identifier='known_free_boundary';gap=shape.distance(edge)
-    if not Polygon(boundary).covers(shape):gap=-1.
-    else:
-        for i,obstacle in enumerate(obstacles):
-            native=getattr(obstacle,'native',None)
-            if native is None:native=Polygon(obstacle)
-            d=shape.distance(native)
-            if d<gap:gap=d;target=native;identifier=getattr(obstacle,'obstacle_id',f'local_obstacle_{i}')
-    a,b=nearest_points(shape,target)
-    return dict(obstacle_id=identifier,raw_clearance=gap,hard_padding=padding,
-                body_point=list(a.coords[0]),obstacle_point=list(b.coords[0]))
+def near_boundary(poly,boundary,margin):
+    """True when the footprint leaves, or is within margin of, the known-free boundary."""
+    if not boundary or any(not inside(p,boundary) for p in poly):return True
+    return min(point_segment(p,a,b) for p in poly for a,b in edges(boundary))<=margin

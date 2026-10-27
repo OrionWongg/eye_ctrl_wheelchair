@@ -77,7 +77,7 @@ class PathTurn(TaskScope):
     def pulse_durations(self,remaining):
         # Near the endpoint, avoid spending a real-time cycle checking a large
         # episode before both useful small ones. Every retained candidate still
-        # receives the complete lease-loss and braking collision prediction.
+        # receives the braking-distance collision check.
         return (.20,.10) if remaining<math.radians(5) else (.30,.20,.10)
     def within_heading_scope(self,yaw):
         predicted=self.progress+self.direction*wrap(yaw-self.last_yaw)
@@ -149,7 +149,6 @@ class PathFollower:
         along=dx*math.cos(h)+dy*math.sin(h)
         lateral=-dx*math.sin(h)+dy*math.cos(h)
         if along < -c.nav_position_tolerance:return self.owner.trip('PATH_ENDPOINT_OVERSHOOT')
-        if abs(lateral)>c.corridor_lateral_limit:return self.owner.trip('PATH_TRACK_DEVIATION')
         feedback_age=state.feedback_age if state.feedback_age is not None else state.observation_age
         delay=c.transport_delay+c.period+(feedback_age or 0.)
         peak=min(c.forward_speed,max(0.,state.v)+c.linear_accel*delay)
@@ -175,9 +174,9 @@ class PathFollower:
         # endpoint tolerance. Shrinking lookahead otherwise amplifies a harmless
         # offset into a late correction and another final-heading correction.
         correction=0. if abs(projected_lateral)<=c.nav_position_tolerance else math.atan2(lateral,max(.4,along))
-        aim=h+max(-c.corridor_correction_angle,min(c.corridor_correction_angle,correction))
+        aim=h+max(-c.path_correction_angle,min(c.path_correction_angle,correction))
         error=wrap(aim-state.yaw)
-        if abs(error)>max(c.task_heading_tolerance*1.5,c.corridor_heading_enter):
+        if abs(error)>max(c.task_heading_tolerance*1.5,c.path_heading_deadband):
             if not stopped:return Decision(STOP,'ASSISTING','PATH_STOP_TO_CORRECT')
             self.turn=PathTurn(self.owner,state,error,self.task_id+'/correction');self.correction=True
             return Decision(STOP,'ASSISTING','PATH_CORRECT')

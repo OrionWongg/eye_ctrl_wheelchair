@@ -56,15 +56,13 @@ class SmacInterface:public rclcpp::Node {
     auto parameter=[&](const std::string &key,double value){return declare_parameter<double>(key,value);};
     auto points=declare_parameter<std::vector<double>>("footprint",{-.45,-.30,.55,-.30,.55,.30,-.45,.30});
     if(points.size()<6||points.size()%2)throw std::invalid_argument("Invalid footprint");
-    double radius=0.;
-    for(size_t i=0;i<points.size();i+=2){geometry_msgs::msg::Point p;p.x=points[i];p.y=points[i+1];if(!std::isfinite(p.x)||!std::isfinite(p.y))throw std::invalid_argument("Nonfinite footprint");body_.push_back(p);radius=std::max(radius,std::hypot(p.x,p.y));}
+    for(size_t i=0;i<points.size();i+=2){geometry_msgs::msg::Point p;p.x=points[i];p.y=points[i+1];if(!std::isfinite(p.x)||!std::isfinite(p.y))throw std::invalid_argument("Nonfinite footprint");body_.push_back(p);}
     double sign=0.;for(size_t i=0;i<body_.size();++i){const auto&a=body_[i];const auto&b=body_[(i+1)%body_.size()];const auto&c=body_[(i+2)%body_.size()];double z=(b.x-a.x)*(c.y-b.y)-(b.y-a.y)*(c.x-b.x);if(std::abs(z)>1e-10){if(sign*z<0)throw std::invalid_argument("Nonconvex footprint");sign=z;}}if(sign==0)throw std::invalid_argument("Degenerate footprint");
     double speed=parameter("forward_speed",.372),left=parameter("left_speed",.389),right=parameter("right_speed",.403);
-    double margin=parameter("margin",.06),error=parameter("model_error",.025),step=parameter("step",.025);
-    for(double v:{speed,left,right,margin,error,step})if(!std::isfinite(v)||v<=0)throw std::invalid_argument("Invalid safety parameter");
-    double padding=margin+error+(speed+radius*std::max(left,right))*step/2;
+    double margin=parameter("margin",.06);
+    for(double v:{speed,left,right,margin})if(!std::isfinite(v)||v<=0)throw std::invalid_argument("Invalid safety parameter");
+    double padding=margin;
     padding_=padding;footprint_=rounded_padding(body_,padding);snapshot_=std::make_shared<SnapshotCostmap>();double sampling=parameter("smac_search_sampling_margin",.05);sampling_=sampling;
-    comfort_=parameter("free_space_clearance",.08);if(!std::isfinite(comfort_)||comfort_<0)throw std::invalid_argument("Invalid tracking reserve");
     if(!std::isfinite(sampling)||sampling<0||sampling>.15)throw std::invalid_argument("Invalid search sampling margin");
     // Circumscribed octagonal padding remains conservative but reduces the
     // Smac grid checker from ~36 edges to ~12 per pose. Final distance checks
@@ -164,10 +162,7 @@ class SmacInterface:public rclcpp::Node {
     // Exact direct routes need no graph search. This also preserves narrow
     // straight passages whose geometry is finer than lattice quantization.
     if(connect(start,goal,out)||connect(start,goal,out,-1))return true;
-    // Reserve the same free-space tracking clearance as the existing backend
-    // around detour bends, instead of erasing it during path simplification.
-    validation_padding_=padding_+(band_==0?comfort_:0.);
-    if(!valid(start)||!valid(goal))validation_padding_=padding_;
+    validation_padding_=padding_;
     snapshot_->footprint(rounded_padding(body_,validation_padding_+sampling_,8));
     used_smac_=true;
     auto raw=planner_->createPlan(stamped(start),stamped(goal));raw_pub_->publish(raw);
@@ -253,7 +248,7 @@ class SmacInterface:public rclcpp::Node {
   nav2_util::LifecycleNode::SharedPtr context_;
   std::shared_ptr<SnapshotCostmap> snapshot_;nav2_core::GlobalPlanner::Ptr planner_;
   nav2_costmap_2d::Costmap2D*map_=nullptr;nav2_costmap_2d::Footprint body_,footprint_;
-  bool configured_=false,valid_map_=false,used_smac_=false;double timeout_,map_timeout_,padding_=0.,validation_padding_=0.,sampling_=0.,comfort_=0.,band_=0.;Pose origin_;
+  bool configured_=false,valid_map_=false,used_smac_=false;double timeout_,map_timeout_,padding_=0.,validation_padding_=0.,sampling_=0.,band_=0.;Pose origin_;
   rclcpp::Time map_stamp_{0,0,RCL_ROS_TIME};Clock::time_point map_received_,deadline_;
   std::string session_;uint64_t sequence_=0;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr raw_pub_;

@@ -52,8 +52,8 @@ class DirectionManager(TaskManager):
         if event.kind == STOP_EVENT:
             self.stop('USER_STOP', now, IDLE, event=event)
             return self._ack(event, True, 'STOPPED')
-        if event.session != self.source_session or not self.healthy(now) or not self.links_healthy(now):
-            return self._ack(event, False, 'NOT_HEALTHY')
+        if event.session != self.source_session:
+            return self._ack(event, False, 'SESSION_MISMATCH')
         if event.kind not in (START, PREFER_LEFT, PREFER_RIGHT, CANCEL_PREFERENCE, TURN_AROUND):
             return self._ack(event, False, 'INVALID_DIRECTION_KIND')
         # A delayed pre-stop motion event cannot restore a cancelled authorization.
@@ -89,11 +89,6 @@ class DirectionManager(TaskManager):
         return None
 
     def tick(self, now, ros_now):
-        if not self.healthy(now):
-            if self.active or self.pending:
-                self.invalidate('INPUT_HEALTH_TIMEOUT', now)
-        elif (self.active or self.pending) and not self.links_healthy(now):
-            self.invalidate('LOWER_HEALTH_TIMEOUT_OR_FAULT', now)
         if self.active and self.lower.get('task_id') == self.active.task_id and self.lower.get('requires_rearm'):
             self.stop(self.lower.get('reason', 'NAV_BLOCKED'), now)
         if self.pending:

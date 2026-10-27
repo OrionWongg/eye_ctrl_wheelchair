@@ -6,7 +6,6 @@
     search_time_limit: 0.25
     max_search_expansions: 12000
     obstacle_cost_weight: 1.0
-    free_space_clearance: 0.08
     heuristic_weight: 4.0
 /wheelchair/local_costmap/local_costmap:
   ros__parameters:

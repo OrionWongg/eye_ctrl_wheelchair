@@ -20,7 +20,7 @@ def main():
     from rclpy.qos import qos_profile_sensor_data
     from wheelchair_interfaces.msg import EyeSample,InputHealth,TaskStatus,IntentEvent
     root=Path(__file__).resolve().parents[1];out=root/'artifacts/intent-camera';out.mkdir(parents=True,exist_ok=True)
-    env=dict(os.environ,WHEELCHAIR_ROS_DOMAIN_ID='99',WHEELCHAIR_MODE='corridor_assist',
+    env=dict(os.environ,WHEELCHAIR_ROS_DOMAIN_ID='99',WHEELCHAIR_MODE='stop_only',
              WHEELCHAIR_INTERACTION_MODE='intent_confirm',WHEELCHAIR_GUI='false',WHEELCHAIR_SCENE='straight_wall')
     log=(out/'runtime.log').open('w')
     rclpy.init();node=Node('camera_intent_transport_audit',parameter_overrides=[Parameter('use_sim_time',value=True)])

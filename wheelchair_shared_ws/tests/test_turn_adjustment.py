@@ -6,8 +6,8 @@ from wheelchair_control.protocol import STOP,FORWARD,LEFT,RIGHT
 from wheelchair_control.executor import Executor
 from wheelchair_control.geometry import IndexedObstacles,clearance,transform,wrap
 from wheelchair_control.direction_input import navigation_notice
-from test_passage import config,BOUND,box,walls
-from test_directional import nav_authorize
+from nav_fixtures import config,BOUND,box,walls
+from nav_fixtures import nav_authorize
 
 
 def bay(blocked=False):
@@ -91,7 +91,7 @@ def test_bad_path_with_detour_is_not_authorized():
 class BlockingProvider:
     last_report={}
     def __init__(self):self.requests=[];self.cancelled=[];self.wait=False
-    def request(self,task_id,start,goals,max_length,band,**kwargs):
+    def request(self,task_id,start,goals,max_length,**kwargs):
         self.requests.append((task_id,start,goals,max_length,kwargs));return len(self.requests)
     def poll(self,token):return ('WAIT',None) if self.wait else ('FAILED','NO_EXECUTABLE_PATH')
     def cancel(self,token):self.cancelled.append(token)
@@ -139,3 +139,18 @@ def test_obstacle_appearing_during_chosen_translation_stops_and_requests_help():
     blocked=IndexedObstacles([*obs,box(.70,.8,-.9,.9)])
     d=core.tick(s,blocked,BOUND,3.)
     assert d.action==STOP and core.latch and d.reason.startswith('TURN_ADJUST_HELP_REQUIRED:')
+
+
+def test_valid_path_accepts_tiny_alignment_turns_around_drive():
+    # Logged 2026-10-27: service path [turn, DRIVE, -turn, TURN] was rejected.
+    from types import SimpleNamespace
+    from wheelchair_control.turn_adjustment import TurnAdjustment
+    from wheelchair_control.planner import Config, State
+    adj=TurnAdjustment(SimpleNamespace(cfg=Config(),uturn=False))
+    adj.origin=(-0.1796,-0.3043,0.0049);adj.target=0.1508;adj.request_distance=0.54
+    path=[(-0.18,-0.3056,0.0051),(-0.18,-0.3056,0.0073),(0.3604,-0.3017,0.0073),
+          (0.3604,-0.3017,0.0049),(0.3604,-0.3017,0.1508)]
+    assert adj.valid_path(path,State(-0.1799,-0.3057,0.0051))
+    # A real extra turn is still rejected.
+    bent=path[:3]+[(0.3604,-0.3017,-0.2),(0.3604,-0.3017,0.1508)]
+    assert not adj.valid_path(bent,State(-0.1799,-0.3057,0.0051))

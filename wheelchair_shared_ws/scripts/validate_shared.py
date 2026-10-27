@@ -21,11 +21,11 @@ if args.scenario=='assist':launch_args+=['mode:=bounded_assist','scene:=slight_o
 if args.scenario=='eye':launch_args+=['input_source:=eye']
 if args.scenario=='office':launch_args+=['scene:=clearpath_office']
 if args.scenario=='corridor':launch_args+=['scene:=clearpath_office','mode:=bounded_assist']
-if args.scenario=='exit_recovery':launch_args+=['scene:=clearpath_office','mode:=corridor_assist']
-if args.scenario=='smooth':launch_args+=['scene:=clearpath_office','mode:=corridor_assist']
-if args.scenario=='side_choice':launch_args+=['scene:=side_door','mode:=corridor_assist']
+if args.scenario=='exit_recovery':launch_args+=['scene:=clearpath_office','mode:=stop_only']
+if args.scenario=='smooth':launch_args+=['scene:=clearpath_office','mode:=stop_only']
+if args.scenario=='side_choice':launch_args+=['scene:=side_door','mode:=stop_only']
 if args.scenario in ('passage','door'):
-    launch_args+=['scene:='+(args.test_scene or ('passage_090' if args.scenario=='passage' else 'door_090')),'mode:=corridor_assist']
+    launch_args+=['scene:='+(args.test_scene or ('passage_090' if args.scenario=='passage' else 'door_090')),'mode:=stop_only']
 if args.scenario in ('rotation_wall','narrow','both_blocked','dynamic'):launch_args+=['scene:='+args.scenario]
 process=subprocess.Popen(launch_args,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
 rclpy.init();node=Node('shared_control_validation',parameter_overrides=[Parameter('use_sim_time',value=True)])

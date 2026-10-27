@@ -75,7 +75,7 @@ def main():
               'Defaults to calibrated RITnet + PuReST fusion; --ritnet selects the old interface.\n'
               'Detector options are passed through unchanged; see EYETLE help below.\n'
               'Environment: WHEELCHAIR_ROS_DOMAIN_ID (default 64), WHEELCHAIR_SCENE,\n'
-              'WHEELCHAIR_MODE (stop_only/bounded_assist/corridor_assist), WHEELCHAIR_GUI (true/false),\n'
+              'WHEELCHAIR_MODE (stop_only/bounded_assist), WHEELCHAIR_GUI (true/false),\n'
               'WHEELCHAIR_FIRST_PERSON (true default), WHEELCHAIR_FIRST_PERSON_VIEW (true default),\n'
               'WHEELCHAIR_INTERACTION_MODE (directional_intent default, intent_confirm or gaze_joystick), EYETLE_WORKSPACE.\n\nRITnet options:',flush=True)
         return subprocess.call([str(EYETLE/detector),'--help'])
@@ -95,12 +95,9 @@ def main():
         print('WHEELCHAIR_INTERACTION_MODE must be directional_intent, intent_confirm or gaze_joystick.',file=sys.stderr);return 2
     if fusion and interaction != 'directional_intent':
         print('Fusion requires directional_intent.', file=sys.stderr);return 2
-    mode=env.get('WHEELCHAIR_MODE','corridor_assist' if interaction in ('intent_confirm','directional_intent') else 'stop_only')
-    if mode not in ('stop_only','bounded_assist','corridor_assist'):
-        print('WHEELCHAIR_MODE must be stop_only, bounded_assist or corridor_assist.',file=sys.stderr)
-        return 2
-    if interaction in ('intent_confirm','directional_intent') and mode!='corridor_assist':
-        print('intent_confirm currently requires WHEELCHAIR_MODE=corridor_assist; use gaze_joystick for legacy comparisons.',file=sys.stderr)
+    mode=env.get('WHEELCHAIR_MODE','stop_only')
+    if mode not in ('stop_only','bounded_assist'):
+        print('WHEELCHAIR_MODE must be stop_only or bounded_assist.',file=sys.stderr)
         return 2
     domain=env.get('WHEELCHAIR_ROS_DOMAIN_ID','64')
     env.update(WHEELCHAIR_ROS_DOMAIN_ID=domain,EYE_ROS_DOMAIN_ID=domain,
@@ -128,7 +125,7 @@ def main():
             'mode:='+mode,
             'interaction_mode:='+interaction,
             'eye_sample_mode:='+('fusion' if fusion else 'stamped' if interaction in ('intent_confirm','directional_intent') else 'legacy'),
-            *(['config:='+str(ROOT/'src/wheelchair_control/config/narrow_control.yaml')] if mode=='corridor_assist' else []),
+            *(['config:='+str(ROOT/'src/wheelchair_control/config/narrow_control.yaml')] if interaction!='gaze_joystick' else []),
             'scene:='+env.get('WHEELCHAIR_SCENE','clearpath_office'),
             'first_person:='+env.get('WHEELCHAIR_FIRST_PERSON','true'),
             'first_person_view:='+env.get('WHEELCHAIR_FIRST_PERSON_VIEW','true'),

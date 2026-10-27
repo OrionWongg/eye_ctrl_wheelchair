@@ -3,7 +3,7 @@
 # Usage: ./run_hardware_eye.sh [interaction_mode:=directional_intent] [...]
 #
 # Prerequisites (start separately, stay running):
-#   /home/whill/sensor_visualization/start_sensors.sh
+#   ./scripts/start_sensors.sh
 #
 # EYETLE detector (fusion tracker) is started as a sibling process.
 # Ctrl+C shuts down both.

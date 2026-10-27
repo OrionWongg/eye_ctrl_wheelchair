@@ -32,7 +32,7 @@ MID360 / Odin → cloud_to_scan、odom_relay → scan_map / 局部代价地图
                       twist_to_key → whill_controller → iPad → 轮椅
 ```
 
-传感器由 `/home/whill/sensor_visualization/start_sensors.sh` 单独启动。
+传感器由 `./scripts/start_sensors.sh` 单独启动。
 
 ## 3. 日志文件与统计
 
