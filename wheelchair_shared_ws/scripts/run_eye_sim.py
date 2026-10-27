@@ -20,14 +20,58 @@ def stop_all(children):
             child.send_signal(signal.SIGINT)
     for child in children:stop_group(child,initial_signal=False)
 
+def run_ipad(args, dry_run):
+    """Launch the identical fusion UI with an iPad output backend."""
+    env = os.environ.copy()
+    domain = env.get('WHEELCHAIR_ROS_DOMAIN_ID', '64')
+    env.update(WHEELCHAIR_ROS_DOMAIN_ID=domain, EYE_ROS_DOMAIN_ID=domain,
+               ROS_DOMAIN_ID=domain, ROS_LOCALHOST_ONLY='1', EYE_ROS_LOCALHOST_ONLY='1')
+    # Fusion samples and feedback use std_msgs; no simulation overlay is needed.
+    env.pop('EYE_WHEELCHAIR_SETUP', None)
+    if '--publish-ros' not in args:
+        args = ['--publish-ros', *args]
+    controller = ROOT.parent / 'scripts/ipad_controller.sh'
+    commands = [
+        [str(controller), '-p', 'unified_ui:=true',
+         '-p', 'hardware_enabled:=' + ('false' if dry_run else 'true')],
+        [str(EYETLE / 'start_fusion.sh'), '--ipad-controls', *args],
+    ]
+    print(f'iPad + {EYETLE / "start_fusion.sh"}: ROS domain {domain}, '
+          f'hardware_enabled={not dry_run}. Close the combined eye/iPad window to stop both.', flush=True)
+    children = []
+    interrupted = False
+
+    def on_signal(signum, frame):
+        nonlocal interrupted
+        interrupted = True
+
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, on_signal)
+    try:
+        for command in commands:
+            children.append(subprocess.Popen(command, env=env, start_new_session=True))
+        while not interrupted:
+            for child in children:
+                code = child.poll()
+                if code is not None:
+                    return code if code >= 0 else 128-code
+            time.sleep(.1)
+        return 130
+    finally:
+        stop_all(children)
+
+
 def main():
     args=sys.argv[1:]
+    ipad = '--ipad' in args
+    dry_run = '--dry-run' in args
+    args = [arg for arg in args if arg not in ('--ipad', '--dry-run')]
     fusion = args[:1] != ['--ritnet']
     if args[:1] in (['--ritnet'], ['--fusion']):args=args[1:]
     detector = 'start_fusion.sh' if fusion else 'start_ritnet.sh'
     if '--help' in args or '-h' in args:
-        print('Usage: run_eye_sim.py [--fusion|--ritnet] [detector options]\n'
-              'Starts Gazebo office + eye shared control + RITnet. Ctrl+C closes both.\n'
+        print('Usage: run_eye_sim.py [--ipad [--dry-run]] [--fusion|--ritnet] [detector options]\n'
+              'Starts fusion eye UI + Gazebo; --ipad selects the iPad serial backend. Ctrl+C closes both.\n'
               'Defaults to calibrated RITnet + PuReST fusion; --ritnet selects the old interface.\n'
               'Detector options are passed through unchanged; see EYETLE help below.\n'
               'Environment: WHEELCHAIR_ROS_DOMAIN_ID (default 64), WHEELCHAIR_SCENE,\n'
@@ -35,6 +79,14 @@ def main():
               'WHEELCHAIR_FIRST_PERSON (true default), WHEELCHAIR_FIRST_PERSON_VIEW (true default),\n'
               'WHEELCHAIR_INTERACTION_MODE (directional_intent default, intent_confirm or gaze_joystick), EYETLE_WORKSPACE.\n\nRITnet options:',flush=True)
         return subprocess.call([str(EYETLE/detector),'--help'])
+    if ipad:
+        if not fusion:
+            print('iPad requires the same fusion interface used by default in simulation.', file=sys.stderr)
+            return 2
+        return run_ipad(args, dry_run)
+    if dry_run:
+        print('--dry-run requires --ipad.', file=sys.stderr)
+        return 2
     # EYETLE owns camera selection, estimation method and reference files.
     # Do not inject or reinterpret detector configuration here.
     env=os.environ.copy()

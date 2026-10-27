@@ -50,3 +50,35 @@ def test_default_launcher_uses_fusion(monkeypatch):
     assert 'eye_sample_mode:=fusion' in calls[0][0]
     assert calls[1][0][0].endswith('/start_fusion.sh')
     assert calls[1][0][1:]==['--publish-ros','--eyes','both']
+
+
+@pytest.mark.parametrize('dry_run', [False, True])
+def test_ipad_uses_same_fusion_launcher_and_owned_processes(monkeypatch, dry_run):
+    scripts = Path(__file__).parents[1] / 'scripts'
+    monkeypatch.syspath_prepend(str(scripts))
+    spec = importlib.util.spec_from_file_location('ipad_launcher', scripts / 'run_eye_sim.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.setenv('WHEELCHAIR_ROS_DOMAIN_ID', '164')
+    monkeypatch.setenv('EYE_WHEELCHAIR_SETUP', '/obsolete/simulation/setup.bash')
+    args = ['--ipad', '--eyes', 'left', '--recalibrate']
+    if dry_run:
+        args.insert(1, '--dry-run')
+    monkeypatch.setattr(sys, 'argv', ['run_eye_sim.py', *args])
+    calls, stopped = [], []
+    monkeypatch.setattr(module.subprocess, 'Popen', lambda command, **kw:
+                        calls.append((command, kw)) or SimpleNamespace(poll=lambda: 0))
+    monkeypatch.setattr(module, 'stop_all', lambda children: stopped.extend(children))
+    monkeypatch.setattr(module.signal, 'signal', lambda *args: None)
+    assert module.main() == 0
+    controller, tracker = calls
+    assert controller[0][0].endswith('/scripts/ipad_controller.sh')
+    assert controller[0][-1] == 'hardware_enabled:=' + ('false' if dry_run else 'true')
+    assert tracker[0] == [str(module.EYETLE / 'start_fusion.sh'), '--ipad-controls', '--publish-ros',
+                          '--eyes', 'left', '--recalibrate']
+    assert len(stopped) == 2
+    for _, options in calls:
+        assert options['start_new_session']
+        assert options['env']['EYE_ROS_DOMAIN_ID'] == '164'
+        assert options['env']['ROS_DOMAIN_ID'] == '164'
+        assert 'EYE_WHEELCHAIR_SETUP' not in options['env']

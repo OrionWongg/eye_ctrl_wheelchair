@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """RITnet + PuReST with centered guided calibration and saved direction mapping."""
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -15,31 +16,47 @@ from gaze_calibration import camera_identity,model_signature
 from fusion_calibration import GuidedCalibration
 from fusion_control import FusionControl,combine_eye_state
 from purest_backend import PuReST
+from camera_paths import fusion_camera_defaults
 
 ROOT=Path(__file__).resolve().parents[1]
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--eyes',choices=['left','both'],default='both')
-    paths=list(Path('/dev/v4l/by-path').glob('*-video-index0'))
-    for side,port,rotation in [('left','4.4.1',180),('right','4.4.2',0)]:
-        device=next((str(x) for x in paths if f':{port}:1.0-' in str(x)),f'/dev/v4l/by-path/missing-{side}-camera')
+    defaults = fusion_camera_defaults()
+    for side,rotation in [('left',180),('right',0)]:
+        device=defaults.get(side, f'/dev/v4l/by-path/missing-{side}-camera')
         p.add_argument(f'--{side}-camera',default=device)
         p.add_argument(f'--{side}-rotation',type=int,choices=[0,90,180,270],default=rotation)
     p.add_argument('--calibration-file',default=str(ROOT/'state/fusion-calibration.json'))
     p.add_argument('--recalibrate',action='store_true')
+    p.add_argument('--saved-calibration-only',action='store_true')
+    p.add_argument('--three-point',action='store_true',help='Legacy center/left/right profile file instead of center-only start')
+    p.add_argument('--gaze-span',type=float,default=.19,help='Center-only: full-frame pupil-x offset for a full turn command')
+    p.add_argument('--allow-calibration-hub-move',action='store_true')
     p.add_argument('--publish-ros',action='store_true')
+    p.add_argument('--ipad-controls',action='store_true')
     p.add_argument('--no-display',action='store_true',help='Diagnostics only; no unattended calibration or ROS')
     p.add_argument('--max-frames',type=int,default=0)
     p.add_argument('--report')
     p.add_argument('--teyed-reference',action='store_true',help='Log TEyeD as a comparison, not a motion vote')
     args=p.parse_args()
+    if args.ipad_controls and not args.publish_ros:p.error('--ipad-controls requires --publish-ros')
+    if not args.three_point and (args.saved_calibration_only or args.recalibrate):
+        p.error('--saved-calibration-only/--recalibrate require --three-point')
+    if args.saved_calibration_only and args.recalibrate:
+        p.error('Saved calibration is read-only; --recalibrate is disabled')
     if args.no_display and args.publish_ros:p.error('The guided control flow requires a display')
     count=1 if args.eyes=='left' else 2
     devices=[args.left_camera,args.right_camera][:count];rotations=[args.left_rotation,args.right_rotation][:count]
+    for side, device in zip(('left', 'right'), devices):
+        if not Path(device).exists():
+            p.error(f'{side} camera path does not exist: {device}; '
+                    f'use --{side}-camera with a capture device from /dev/v4l/by-path/')
+    print('Eye cameras: ' + ', '.join(devices), flush=True)
     if count==2 and Path(devices[0]).resolve()==Path(devices[1]).resolve():p.error('Two different cameras required')
     ui=None;blink=None;pure=None;reference=None;node=None;pub=None;cameras=[];cal=None;control=None
-    feedback=dict(state='NO_CONTROLLER',reason='',blink_count=0,event_decision='NONE',target='turtle',at=0.)
+    feedback=dict(blockers=[],state='NO_CONTROLLER',reason='',blink_count=0,event_decision='NONE',target='turtle',at=0.)
     source_session=str(uuid.uuid4());source_sequence=0
     trace=None
     def write_trace(record):
@@ -55,7 +72,9 @@ def main():
             trace=None
     def receive(msg):
         try:
-            d=json.loads(msg.data);feedback.update(state=str(d['state']),reason=str(d.get('reason','')),
+            d=json.loads(msg.data)
+            if ui and ui.ipad_panel:ui.ipad_panel.update(d)
+            feedback.update(blockers=d.get('blockers',[]),state=str(d['state']),reason=str(d.get('reason','')),
                                                   blink_count=int(d.get('blink_count',0)), target=str(d.get('target','turtle')),
                                                   event_decision=str(d.get('event_decision','NONE')),at=time.monotonic())
         except (ValueError,KeyError,TypeError):pass
@@ -85,7 +104,7 @@ def main():
         cv2.setNumThreads(2)
         if not args.no_display:
             from fusion_guide import GuideWindow
-            ui=GuideWindow();ui.poll()
+            ui=GuideWindow(ipad_controls=args.ipad_controls,center_only=not args.three_point);ui.poll()
         engine_paths=[ROOT/'models/ritnet'/f'ritnet_{size}.engine' for size in ('640x480','320x240','320x240_b2')]
         blink=RitnetBlink(*map(str,engine_paths),count);blink.warmup()
         pure=PuReST(count)
@@ -98,14 +117,30 @@ def main():
             rclpy.init();node=rclpy.create_node('fusion_eye_tracker')
             pub=node.create_publisher(String,'/eye_tracking/fusion_samples',1)
             node.create_subscription(String,'/eye_control/feedback',receive,1)
+            if ui and ui.ipad_panel:
+                ui_commands=node.create_publisher(String,'/whill/controller/ui',1)
+                def send_ui_command(action):
+                    ui_commands.publish(String(data=json.dumps(dict(
+                        action=action,stamp_ns=node.get_clock().now().nanoseconds))))
+                ui.ipad_panel.send=send_ui_command
         for d in devices:cameras.append(LatestCamera(d))
         binding=dict(cameras=[camera_identity(d) for d in devices],rotations=rotations,
             sizes=[[int(c.cap.get(cv2.CAP_PROP_FRAME_WIDTH)),int(c.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))] for c in cameras],
             models=model_signature(engine_paths+[pure.library]),feature='full-image-pupil-x-v1',quality_threshold=.6)
-        cal=GuidedCalibration(args.calibration_file,binding,count)
+        cal=GuidedCalibration(args.calibration_file,binding,count,
+            saved_only=args.saved_calibration_only,allow_hub_move=args.allow_calibration_hub_move,
+            center_only=not args.three_point,span=args.gaze_span)
+        calibration_info=dict(mode='three-point' if args.three_point else 'center-only',span=cal.span,
+            path=str(Path(args.calibration_file).resolve()),loaded=cal.loaded,
+            saved_only=cal.saved_only,binding_remapped=cal.binding_remapped,
+            sha256=hashlib.sha256(Path(args.calibration_file).read_bytes()).hexdigest()
+                if Path(args.calibration_file).is_file() else None)
+        print('FUSION_CALIBRATION '+json.dumps(calibration_info),flush=True)
+        write_trace(dict(type='calibration',wall_time=time.time(),data=calibration_info))
         if args.recalibrate:cal.restart(full=True)
         control=FusionControl(cal)
-        print('FUSION: RITnet + PuReST; guided center/left/right; saved='+str(cal.loaded),flush=True)
+        print('FUSION: RITnet + PuReST; '+('guided center/left/right; saved='+str(cal.loaded)
+              if args.three_point else f'center-only start; span={cal.span}'),flush=True)
         seq=[0]*count;last_frame=time.monotonic()
         while True:
             if node:rclpy.spin_once(node,timeout_sec=0.)
@@ -170,7 +205,7 @@ def main():
                     blink_event=control.event,blink_phase=control.gestures.status,gesture_continuity=control.gestures.continuity,
                     long_close=control.long_close,
                     valid=valid,closed=closed,horizontal=h,reason=reason,controller=state,
-                    controller_reason=feedback['reason'],controller_blinks=feedback['blink_count'],
+                    controller_reason=feedback['reason'],controller_blockers=feedback['blockers'],controller_blinks=feedback['blink_count'],
                     controller_event_decision=feedback['event_decision'],
                     eye_directions=control.eye_directions,
                     sample_sequence=source_sequence, session=source_session,
@@ -182,7 +217,7 @@ def main():
                 print('FUSION_INPUT '+json.dumps(record,allow_nan=False),flush=True)
                 last_status=status;last_log=now
             if ui and now-last_draw>=.1:
-                ui.render(cal.phase,cal.progress,cal.message,state,valid,h,states,cal.index,feedback['blink_count'],feedback['target']);last_draw=now
+                ui.render(cal.phase,cal.progress,cal.message,state,valid,h,states,cal.index,feedback['blink_count'],feedback['target'],feedback['blockers']);last_draw=now
             if args.max_frames and n>=args.max_frames:break
     except KeyboardInterrupt:pass
     finally:

@@ -54,12 +54,21 @@ class FusionTest(unittest.TestCase):
         self.assertTrue(self.cal.pending_save);self.assertFalse(self.cal.ready)
         self.cal.save_pending();self.assertTrue(self.cal.ready)
         json.loads(self.path.read_text())
-    def test_detector_conflict_and_one_eye_missing_stop(self):
+    def test_detector_conflict_stops_and_one_missing_eye_falls_back(self):
         self.complete();q=np.ones((2,2))
         bad=self.values['center'].copy();bad[0]=[.35,.66]
         self.assertEqual(self.cal.horizontal(bad,q)[3],'DETECTORS_DISAGREE')
         q[0]=0
-        self.assertEqual(self.cal.horizontal(self.values['center'],q)[3],'NO_DIRECTION_FEATURE')
+        h,ok,eyes,_=self.cal.horizontal(self.values['left'],q)
+        self.assertTrue(ok);self.assertEqual(len(eyes),1);self.assertAlmostEqual(h,-1)
+        self.assertEqual(self.cal.horizontal(self.values['center'],np.zeros((2,2)))[3],'NO_DIRECTION_FEATURE')
+    def test_opposite_turned_eyes_disagree_but_amplitude_mismatch_passes(self):
+        self.complete();q=np.ones((2,2))
+        mixed=np.array([self.values['left'][0],self.values['right'][1]])
+        self.assertEqual(self.cal.horizontal(mixed,q)[3],'EYES_DISAGREE')
+        weak=np.array([self.values['left'][0],(self.values['left'][1]+self.values['center'][1])/2])
+        h,ok,_,_=self.cal.horizontal(weak,q)
+        self.assertTrue(ok);self.assertLess(h,-.6)
         q=np.ones((2,2));q[:,1]=0
         self.assertTrue(self.cal.horizontal(self.values['left'],q)[1])
     def test_blink_stays_independent_of_closed_pupil_coordinates(self):
@@ -114,6 +123,37 @@ class FusionTest(unittest.TestCase):
         f.reset_gesture();self.assertEqual(f.gestures.serial,event_id)
 
 
+class CenterOnlyTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
+        self.path=Path(self.tmp.name)/'unused.json'
+        self.cal=GuidedCalibration(self.path,{'cameras':['l','r']},2,hold=.6,settle=.1,
+                                   min_samples=8,center_only=True,span=.2)
+        self.now=0.
+    def look(self,value,n=40):
+        for _ in range(n):
+            self.now+=.05;self.cal.observe(np.asarray(value,float),np.ones((2,2)),['open']*2,self.now,True)
+    def test_single_center_fixation_is_ready_and_writes_nothing(self):
+        self.assertEqual(self.cal.steps,['center'])
+        center=[[.55,.55],[.45,.45]];self.look(center)
+        self.assertTrue(self.cal.ready);self.assertFalse(self.path.exists())
+        q=np.ones((2,2))
+        self.assertAlmostEqual(self.cal.horizontal(np.array(center),q)[0],0)
+        # Looking left raises full-frame pupil x on both mounted cameras.
+        self.assertAlmostEqual(self.cal.horizontal(np.array(center)+.2,q)[0],-1)
+        self.assertAlmostEqual(self.cal.horizontal(np.array(center)-.1,q)[0],.5)
+        self.cal.restart(full=True)
+        self.assertFalse(self.cal.ready);self.assertEqual(self.cal.phase,'center')
+    def test_unstable_center_is_not_accepted(self):
+        for i in range(60):
+            self.now+=.05;v=.5+(.05 if i%2 else -.05)
+            self.cal.observe(np.full((2,2),v),np.ones((2,2)),['open']*2,self.now,True)
+        self.assertFalse(self.cal.ready)
+    def test_invalid_span_rejected(self):
+        with self.assertRaises(ValueError):
+            GuidedCalibration(self.path,{},2,center_only=True,span=0)
+
+
 @unittest.skipUnless((ROOT/'build/purest/libpurest.so').exists(),'Build PuReST first')
 class PuReSTTest(unittest.TestCase):
     def test_original_tracker_detects_ellipse_and_rejects_black_occlusion(self):
@@ -130,3 +170,33 @@ class PuReSTTest(unittest.TestCase):
         self.assertFalse(p.infer([frame],[None],[1.])[0]['valid'])
 
 if __name__=='__main__':unittest.main()
+
+
+class SavedSimulationProfileTest(unittest.TestCase):
+    def test_known_hub_move_reuses_exact_points_without_writing(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'profile.json'
+            old = {'cameras': [f'/dev/v4l/by-path/usb-0:4.4.{i}:1.0-video-index0'
+                               for i in (1, 2)], 'rotations': [180, 0]}
+            current = dict(old, cameras=[p.replace('4.4.', '4.1.') for p in old['cameras']])
+            data = dict(schema='eye-fusion-v1', binding=old,
+                        points=[[[.6, .6], [.6, .6]], [[.5, .5], [.5, .5]],
+                                [[.4, .4], [.4, .4]]], selected=[[True, True], [True, True]])
+            original = json.dumps(data).encode()
+            path.write_bytes(original)
+            cal = GuidedCalibration(path, current, 2, saved_only=True, allow_hub_move=True)
+            self.assertTrue(cal.loaded)
+            self.assertTrue(cal.binding_remapped)
+            self.assertEqual(cal.steps, ['confirm'])
+            self.assertEqual(cal.profile['points'], data['points'])
+            cal.restart(full=True)
+            self.assertEqual(cal.steps, ['confirm'])
+            cal.pending_save = True
+            cal.save_pending()
+            self.assertEqual(path.read_bytes(), original)
+            for binding in (dict(current, rotations=[0, 0]),
+                            dict(current, cameras=current['cameras'][::-1])):
+                with self.assertRaises(ValueError):
+                    GuidedCalibration(path, binding, 2, saved_only=True, allow_hub_move=True)
+            with self.assertRaises(ValueError):
+                GuidedCalibration(path, current, 2, saved_only=True)

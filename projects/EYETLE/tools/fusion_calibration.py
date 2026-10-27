@@ -1,4 +1,8 @@
-"""Guided 2D calibration with per-eye/per-detector scale and atomic reuse."""
+"""Guided 2D calibration with per-eye/per-detector scale and atomic reuse.
+
+center_only: look at the center once per start; left/right use a fixed span
+in full-frame pupil-x units, so no profile file is read or written.
+"""
 from collections import deque
 import json
 import os
@@ -7,18 +11,43 @@ import tempfile
 import numpy as np
 
 
+def same_binding(saved, current, allow_hub_move=False):
+    """Allow only the known 4.4 -> 4.1 hub move, preserving eye order."""
+    if saved == current:
+        return True
+    if not allow_hub_move or not isinstance(saved, dict):
+        return False
+    def normalized(binding):
+        result = dict(binding)
+        result['cameras'] = [
+            str(p).replace(':4.1.1:1.0-video-index0', ':4.4.1:1.0-video-index0')
+                  .replace(':4.1.2:1.0-video-index0', ':4.4.2:1.0-video-index0')
+            for p in binding.get('cameras', [])]
+        return result
+    return normalized(saved) == normalized(current)
+
+
 class GuidedCalibration:
-    def __init__(self,path,binding,count,hold=1.5,settle=1.,min_samples=15):
+    def __init__(self,path,binding,count,hold=1.5,settle=1.,min_samples=15,
+                 saved_only=False,allow_hub_move=False,center_only=False,span=.19):
         self.path=Path(path);self.binding=binding;self.count=count
+        self.saved_only=saved_only;self.center_only=center_only;self.span=float(span)
+        if center_only and not .02<=self.span<=.5:raise ValueError('Gaze span must be in [0.02, 0.5]')
+        self.binding_remapped=False
         self.hold=hold;self.settle=settle;self.min_samples=min_samples
         self.profile=None;self.loaded=False;self.error='';self.pending_save=False
+        if center_only:
+            self.restart(full=False);return
         try:
             data=json.loads(self.path.read_text())
-            if data.get('schema')=='eye-fusion-v1' and data.get('binding')==binding:
+            if data.get('schema')=='eye-fusion-v1' and same_binding(data.get('binding'),binding,allow_hub_move):
                 self._validate(data['points'],data['selected'])
                 self.profile=data;self.loaded=True
+                self.binding_remapped=data['binding'] != binding
         except FileNotFoundError:pass
         except (OSError,ValueError,KeyError,TypeError) as exc:self.error=str(exc)
+        if saved_only and not self.loaded:
+            raise ValueError(f'Saved eye calibration unavailable or binding mismatch: {self.path}; {self.error}')
         self.restart(full=False)
 
     def _validate(self,points,selected):
@@ -31,6 +60,17 @@ class GuidedCalibration:
         if np.any((p<0)|(p>1)):raise ValueError('Invalid feature range')
 
     def restart(self,full=False):
+        if self.center_only:
+            # A new center replaces the whole synthetic profile; nothing is saved.
+            self.profile=None;self.steps=['center']
+            self.index=0;self.phase='center';self.ready=False;self.progress=0.
+            self.entered=None;self.last=None;self.buffer=deque();self.captures={}
+            self.center=None;self.pending_save=False;self.message='准备看正中间的圆点'
+            return
+        if full and self.saved_only:
+            self.restart(full=False)
+            self.message='使用原仿真标定，仅重新确认正中；不会重新标定或保存'
+            return
         if full:self.profile=None;self.loaded=False
         self.steps=['confirm'] if self.profile is not None else ['center','left','right','confirm']
         self.index=0;self.phase=self.steps[0];self.ready=False;self.progress=0.
@@ -73,6 +113,15 @@ class GuidedCalibration:
                 self.pending_save=True;self.save_pending()
             else:self.ready=True;self.phase='ready';self.message='已就绪'
             return
+        if self.center_only:
+            selected=stable&np.isfinite(med)
+            self.center=np.where(selected,med,.5)
+            # Looking left raises full-frame pupil x for both mounted cameras.
+            points=[self.center+self.span,self.center,self.center-self.span]
+            self.profile=dict(schema='eye-fusion-center-v1',points=np.asarray(points).tolist(),
+                              selected=selected.tolist(),span=self.span)
+            self.ready=True;self.phase='ready';self.message='已就绪'
+            return
         self.captures[self.phase]=med
         if self.phase=='right':
             p=np.array([self.captures[k] for k in ('left','center','right')])
@@ -87,7 +136,7 @@ class GuidedCalibration:
         self.entered=now;self.buffer.clear();self.progress=0.
 
     def save_pending(self):
-        if not self.pending_save:return
+        if self.saved_only or self.center_only or not self.pending_save:return
         tmp=None
         try:
             self._validate(self.profile['points'],self.profile['selected'])
@@ -110,11 +159,14 @@ class GuidedCalibration:
         denominator=np.where(toward_right,right,-left)
         norm=np.divide(delta,denominator,out=np.zeros_like(delta),where=denominator!=0)
         available=selected&np.isfinite(a)&np.isfinite(q)&(q>=.6)
-        eyes=[]
+        eyes=[];weights=[]
         for i in range(self.count):
-            v=norm[i,available[i]];weights=q[i,available[i]]
-            if len(v)==0:return 0.,False,eyes,'NO_DIRECTION_FEATURE'
+            v=norm[i,available[i]];w=q[i,available[i]]
+            # An eye without a direction feature is skipped; the other eye steers.
+            if len(v)==0:continue
             if np.ptp(v)>.5:return 0.,False,eyes,'DETECTORS_DISAGREE'
-            eyes.append(float(np.clip(np.average(v,weights=weights),-1,1)))
-        if np.ptp(eyes)>.65:return 0.,False,eyes,'EYES_DISAGREE'
-        return float(np.mean(eyes)),True,eyes,'READY'
+            eyes.append(float(np.clip(np.average(v,weights=w),-1,1)));weights.append(float(w.mean()))
+        if not eyes:return 0.,False,eyes,'NO_DIRECTION_FEATURE'
+        # Only opposite, clearly turned eyes are a conflict; amplitude differences are normal.
+        if min(eyes)<-.5 and max(eyes)>.5:return 0.,False,eyes,'EYES_DISAGREE'
+        return float(np.average(eyes,weights=weights)),True,eyes,'READY'

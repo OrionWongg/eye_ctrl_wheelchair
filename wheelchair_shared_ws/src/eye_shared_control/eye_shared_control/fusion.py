@@ -37,7 +37,7 @@ class FusionInput:
     """Turtle gesture semantics, translated into navigation events, never Twist.
 
     Double blink arms, single blink resumes; gaze edges select direction while
-    active. A one-second input pulse/recenter latch bounds repeat requests;
+    active. Direction persists while gaze remains past the enter threshold;
     the wheelchair planner owns the physical turn and its duration.
     """
     def __init__(self, machine):
@@ -53,7 +53,6 @@ class FusionInput:
         self.horizontal_at = -math.inf
         self.gaze_after = -math.inf
         self.turn = 0
-        self.turn_until = 0.
         self.turn_armed = True
         self.event_decision = 'NONE'
         self.reason = 'STARTUP'
@@ -141,13 +140,15 @@ class FusionInput:
             return
         if abs(self.horizontal) < m.cfg.leave:
             self.turn_armed = True
-        if self.turn and now >= self.turn_until:
-            self.turn = 0
-        if not self.turn and self.turn_armed and m.pending is None:
+            if self.turn:
+                self.turn = 0
+                self.emit(now, 0)
+        elif self.turn_armed and m.pending is None:
             direction = -1 if self.horizontal < -m.cfg.enter else 1 if self.horizontal > m.cfg.enter else 0
             if direction:
-                self.turn, self.turn_until, self.turn_armed = direction, now+1., False
-                self.emit(now, direction)
+                if self.turn != direction:
+                    self.turn, self.turn_armed = direction, False
+                    self.emit(now, direction)
 
     def receive(self, payload, now, wall, clock_valid):
         m = self.machine

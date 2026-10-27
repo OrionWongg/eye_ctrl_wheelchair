@@ -4,8 +4,10 @@ import math
 from fusion_control import TURN_THRESHOLD
 
 class GuideWindow:
-    def __init__(self):
-        self.root=tk.Tk();self.root.title('眼动控制 · 自动引导')
+    def __init__(self, ipad_controls=False, center_only=False):
+        self.ipad_panel=None
+        self.bottom_height=160 if ipad_controls else 65
+        self.root=tk.Tk();self.root.title('眼动与 iPad 控制' if ipad_controls else '眼动控制 · 自动引导')
         sw,sh=self.root.winfo_screenwidth(),self.root.winfo_screenheight()
         self.width=min(1280,sw-80);self.height=min(800,sh-100)
         self.root.geometry(f'{self.width}x{self.height}+{(sw-self.width)//2}+{(sh-self.height)//2}')
@@ -17,10 +19,14 @@ class GuideWindow:
         self.root.bind('<Escape>',lambda e:self.close())
         self.root.bind('c',lambda e:self.request('center'))
         self.root.bind('r',lambda e:self.request('full'))
-        self.canvas=tk.Canvas(self.root,width=self.width,height=self.height-65,bg='#101827',highlightthickness=0)
+        self.canvas=tk.Canvas(self.root,width=self.width,height=self.height-self.bottom_height,bg='#101827',highlightthickness=0)
         self.canvas.pack()
+        if ipad_controls:
+            from ipad_panel import IpadPanel
+            self.ipad_panel=IpadPanel(self.root)
         bar=tk.Frame(self.root,bg='#101827');bar.pack(fill='x',padx=24,pady=8)
-        for text,action in [('重新确认正中','center'),('重新标定左右','full'),('重试保存','save'),('退出','exit')]:
+        actions=[('重新确认正中','center'),('退出','exit')] if ipad_controls or center_only else [('重新确认正中','center'),('重新标定左右','full'),('重试保存','save'),('退出','exit')]
+        for text,action in actions:
             tk.Button(bar,text=text,font=('Noto Sans CJK SC',13),command=lambda a=action:self.request(a),
                       bg='#263449',fg='white',activebackground='#40506a',relief='flat',padx=14,pady=6).pack(side='left',padx=8)
         self.render('loading',0,'正在启动摄像头和检测器','NO_CONTROLLER',False,0,[],0)
@@ -40,14 +46,17 @@ class GuideWindow:
     def request(self,action):
         if action=='exit':self.close()
         else:self.action=action
-    def close(self):self.closed=True
+    def close(self):
+        if self.ipad_panel:self.ipad_panel.command('stop')
+        self.closed=True
     def poll(self):
+        if self.ipad_panel:self.ipad_panel.update()
         if self.closed:return 'exit'
         try:self.root.update_idletasks();self.root.update()
         except tk.TclError:self.closed=True;return 'exit'
         action=self.action;self.action=None;return action
-    def render(self,phase,progress,message,controller,valid,h,eyes,step=0,blink_count=0,target='turtle'):
-        c=self.canvas;c.delete('all');w=self.width;ch=self.height-65
+    def render(self,phase,progress,message,controller,valid,h,eyes,step=0,blink_count=0,target='turtle',blockers=None):
+        c=self.canvas;c.delete('all');w=self.width;ch=self.height-self.bottom_height
         ready=phase=='ready'
         if ready!=self.was_ready:
             self.root.attributes('-topmost',not ready);self.was_ready=ready
@@ -62,6 +71,8 @@ class GuideWindow:
             if controller=='DISARMED' and blink_count==1:title='已识别一次眨眼 · 请再眨眼一次'
             if target=='wheelchair':title=title.replace('小乌龟','轮椅')
             if not valid:title='暂时未看清眼睛 · 保持睁眼和头部稳定'
+            if blockers:
+                title='控制器未就绪 · 眨眼暂不驱动轮椅'
         else:title=titles.get(phase,'请跟随引导')
         text(w/2,42,'眼动控制  /  自动引导',18,'#8fa7c8')
         text(w/2,108,title,30,'#ffffff',True)
@@ -87,6 +98,14 @@ class GuideWindow:
         else:text(w/2,ch-145,
             '运行中看左右直接转向；回中后可再触发，暂停后眨眼恢复' if target=='wheelchair' else
             '看左／右选择方向；输入异常时小乌龟保持停止',18,'#bac9df')
+        if ready and blockers:
+            descriptions={
+                'IPAD_NOT_ARMED':'请点击下方“启用眼动”' if self.ipad_panel else '请在 iPad 控制窗口点击 Arm Eye Control',
+                'IPAD_BLE_NOT_CONNECTED':'等待 iPad 蓝牙连接 nimble',
+                'IPAD_HOMING_NOT_READY':'等待 iPad 指针归位完成',
+                'IPAD_APP_MODE_REQUIRED':'控制器需要处于 APP 模式',
+            }
+            text(w/2,ch-92,'；'.join(descriptions.get(b,b) for b in blockers),17,'#fbbf24')
         names={'open':'睁眼','closed':'闭眼','unknown':'未看清'}
         labels=['左眼','右眼']
         text(w/2,ch-39,'    '.join(f'{labels[i]}：{names.get(e,e)}' for i,e in enumerate(eyes)),17,'#8fa7c8')

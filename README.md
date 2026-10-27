@@ -28,7 +28,7 @@ docs/                     整理说明、依赖与来源清单
 
 默认融合入口：双眨眼启动；运行中看左右提交转向意图；暂停后单眨眼恢复；闭眼或输入失效停车。启动／恢复后有 0.5 秒视线缓冲。最新行为与已知问题以 [2026-10-19 接入总结](projects/EYE_WHEELCHAIR_INTEGRATION_SUMMARY_20261019.md) 为准，旧文档中的确认手势属于历史模式。
 
-目前眼动共享控制交付是仿真闭环；BLE 硬件代码一并归档，不代表已完成眼动到真实轮椅的整体验收。墙角受阻恢复等未解决问题见上述总结。
+眼动到 iPad 的直接遥控接口已接入，可用 `./scripts/project.sh eye-ipad` 连接真实串口 `/dev/ble2wchair`（同时启动与仿真相同的眼动界面，追加 `--dry-run` 可离线运行），见 [接口与验证说明](docs/EYE_IPAD.md)。共享控制仍为仿真闭环；真实轮椅尚未验收。墙角受阻恢复等未解决问题见上述总结。
 
 ## 安装与构建
 
@@ -57,6 +57,8 @@ source /opt/ros/humble/setup.bash
 可用 `EYETLE_WORKSPACE`、`WHEELCHAIR_WORKSPACE` 覆盖工作空间路径。眼动入口默认统一 ROS domain 为 64。更多参数见各子项目说明。
 
 ## 文档导航
+
+- [眼动／iPad 接入总结与滑杆拖动未解决问题（2026-10-22）](docs/EYE_IPAD_INTEGRATION_SUMMARY_20261022.md)
 
 - [眼动算法及接口](projects/EYETLE/docs/EYE_CONTROL_ARCHITECTURE_AND_INTERFACES.md)
 - [共享控制说明](wheelchair_shared_ws/README.md)
