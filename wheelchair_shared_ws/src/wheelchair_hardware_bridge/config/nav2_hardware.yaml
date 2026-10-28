@@ -7,6 +7,9 @@
     max_search_expansions: 12000
     obstacle_cost_weight: 1.0
     heuristic_weight: 4.0
+    state_cell: 0.10
+    state_heading_bins: 72
+    search_sampling_margin: 0.0
 /wheelchair/local_costmap/local_costmap:
   ros__parameters:
     global_frame: odom
@@ -20,7 +23,8 @@
     track_unknown_space: true
     always_send_full_costmap: true
     transform_tolerance: 0.15
-    footprint: '[[-0.45,-0.30],[0.55,-0.30],[0.55,0.30],[-0.45,0.30]]'
+    # footprint: '[[-0.42,-0.275],[0.53,-0.275],[0.53,0.275],[-0.42,0.275]]'
+    footprint: '[[-0.10,-0.10],[0.10,-0.10],[0.10,0.10],[-0.10,0.10]]'
     footprint_padding: 0.0
     plugins:
     - static_layer

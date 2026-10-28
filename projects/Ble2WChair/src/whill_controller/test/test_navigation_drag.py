@@ -118,6 +118,37 @@ def test_hold_navigation_releases_locally_and_rejects_late_drive(monkeypatch):
         rclpy.try_shutdown()
 
 
+def test_rviz_lease_drives_without_key_and_stop_revokes_it():
+    calibration=Path(__file__).parents[1]/'config/ipad_calibration_20261009.json'
+    rclpy.init(args=['--ros-args','-p','hardware_enabled:=false','-p','whill_mode:=true',
+                    '-p','keyboard_auto_drag:=true','-p','navigation_control_enabled:=true',
+                    '-p','navigation_hold_to_run:=true','-p','rviz_goal_authority_enabled:=true',
+                    '-p',f'calibration_file:={calibration}'])
+    node=None
+    try:
+        node=WhillControllerNode()
+        end=time.monotonic()+3.
+        while time.monotonic()<end:node.root.update();time.sleep(.005)
+        def command(v=0.):
+            msg=TwistStamped();msg.header.frame_id='base_link'
+            msg.header.stamp=node.get_clock().now().to_msg();msg.twist.linear.x=v
+            node.on_navigation_command(msg)
+        def authority():
+            node.on_goal_authority(String(data=json.dumps(dict(
+                stamp=node.get_clock().now().nanoseconds/1e9,task_id='rviz:test'))))
+        command();node.toggle_keyboard_arm()
+        command(.372);assert not node.click_held
+        authority();command(.372)
+        assert node.click_held and not node.navigation_keys_held
+        node.on_key_press(SimpleNamespace(keysym='s'))
+        assert not node.click_held
+        authority();command(.372)
+        assert not node.click_held  # Late authorization cannot undo local stop.
+    finally:
+        if node is not None:node.close();node.destroy_node()
+        rclpy.try_shutdown()
+
+
 def test_real_x11_state_ignores_delayed_repeat_and_detects_keyup():
     """XTest changes the X server bitmap, unlike Tk event_generate/key handlers."""
     import ctypes

@@ -31,8 +31,7 @@ def main():
         req.task_id='office-regression';req.request_id=1
         req.start=Pose2D(x=2.5849175,y=.8221296,theta=.3567718)
         req.goals=[Pose2D(x=goal[0],y=goal[1],theta=0.)]
-        req.corridor_origin=Pose2D(x=origin[0],y=origin[1],theta=origin[2])
-        req.corridor_half_width=.25;req.max_path_length=4.;req.allow_detour=True
+        req.max_path_length=4.;req.allow_detour=True
         future=client.call_async(req);rclpy.spin_until_future_complete(node,future,timeout_sec=3.)
         assert future.done(),'service timeout'
         result=future.result()
@@ -44,10 +43,9 @@ def main():
         print(json.dumps(dict(reason=result.reason,expansions=result.expansions,compute_ms=result.compute_ms)),flush=True)
     try:
         assert client.wait_for_service(timeout_sec=10.)
-        call((2.5849175,.8221296,.3567718),(4.0656133,1.05),'GOAL_OUTSIDE_CORRIDOR')
+        # The corridor band was removed from the planner contract; these cases
+        # now only exercise the plain straight route and the collision guard.
         call((0.,1.05,0.),(4.0656133,1.05),'PLANNED')
-        call((0.,1.05,0.),(4.0656133,1.4),'GOAL_OUTSIDE_CORRIDOR')
-        call((0.,1.2,0.),(4.0656133,1.2),'START_OUTSIDE_CORRIDOR')
         # Fill the map to verify collision is not bypassed by the corrected axis.
         grid.data=[100]*16000
         call((0.,1.05,0.),(4.0656133,1.05),'START_COLLISION')

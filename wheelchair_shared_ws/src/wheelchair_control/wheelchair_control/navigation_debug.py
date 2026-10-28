@@ -35,7 +35,7 @@ class NavigationDebug(Node):
             values.update(yaml.safe_load(path.read_text()).get('/**',{}).get('ros__parameters',{}))
         points=values['footprint'];values['footprint']=tuple(zip(points[::2],points[1::2]))
         self.fallback_cfg=Config(**{k:v for k,v in values.items() if k in Config.__dataclass_fields__})
-        self.body_mask=self.declare_parameter('body_mask',[-.42,.63,-.40,.40]).value
+        self.body_mask=self.declare_parameter('body_mask',[-.42,.53,-.275,.275]).value
         from wheelchair_hardware_bridge.scan_map import BODY, SELF_ECHO
         self.scan_body=BODY;self.self_echo=SELF_ECHO
         bridge=yaml.safe_load((FilePath(get_package_share_directory('wheelchair_hardware_bridge'))/'config'/'hardware_bridge.yaml').read_text())
@@ -75,7 +75,7 @@ class NavigationDebug(Node):
         else:self.fault_key=None
         key=(data.get('state'),data.get('reason'),data.get('executor_reason'))
         if key!=self.last_key:
-            self.get_logger().info(f'{key[0]}: {key[1]} | executor: {key[2]} | compute {data.get("compute_ms",0):.1f} ms')
+            self.get_logger().debug(f'{key[0]}: {key[1]} | executor: {key[2]} | compute {data.get("compute_ms",0):.1f} ms')
             self.last_key=key
 
     def odom(self,msg):

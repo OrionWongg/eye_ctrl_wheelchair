@@ -1,0 +1,83 @@
+# Experimental continuous-velocity DWB profile.
+# Run controller_server in namespace /wheelchair/dwb_preview.
+# cmd_vel stays /wheelchair/dwb_preview/cmd_vel; iPad accepts it only with explicit topic opt-in and local enable.
+# Existing vendor/dwb runtime. Initial acceleration limits are conservative settings, not identified dynamics.
+/wheelchair/dwb_preview/controller_server:
+  ros__parameters:
+    use_sim_time: false
+    controller_frequency: 20.0
+    odom_topic: /wheelchair/control_center/odom
+    progress_checker_plugin: progress_checker
+    goal_checker_plugins: [goal_checker]
+    controller_plugins: [FollowPath]
+    progress_checker:
+      plugin: nav2_controller::SimpleProgressChecker
+      required_movement_radius: 0.10
+      movement_time_allowance: 10.0
+    goal_checker:
+      plugin: nav2_controller::SimpleGoalChecker
+      xy_goal_tolerance: 0.06
+      yaw_goal_tolerance: 0.035
+      stateful: true
+    FollowPath:
+      plugin: dwb_core::DWBLocalPlanner
+      trajectory_generator_name: dwb_plugins::StandardTrajectoryGenerator
+      min_vel_x: 0.0
+      max_vel_x: 0.30
+      min_vel_y: 0.0
+      max_vel_y: 0.0
+      max_vel_theta: 0.40
+      min_speed_xy: 0.0
+      max_speed_xy: 0.30
+      min_speed_theta: 0.0
+      acc_lim_x: 0.30
+      acc_lim_y: 0.0
+      acc_lim_theta: 0.50
+      decel_lim_x: -0.30
+      decel_lim_y: 0.0
+      decel_lim_theta: -0.50
+      vx_samples: 12
+      vy_samples: 1
+      vtheta_samples: 21
+      sim_time: 1.7
+      linear_granularity: 0.025
+      angular_granularity: 0.025
+      transform_tolerance: 0.15
+      short_circuit_trajectory_evaluation: true
+      debug_trajectory_details: true
+      publish_evaluation: true
+      publish_trajectories: true
+      publish_local_plan: true
+      publish_global_plan: true
+      critics: [Oscillation, ObstacleFootprint, PathAlign, PathDist, GoalAlign, GoalDist]
+      ObstacleFootprint.scale: 0.02
+      PathAlign.scale: 32.0
+      PathAlign.forward_point_distance: 0.1
+      GoalAlign.scale: 24.0
+      GoalAlign.forward_point_distance: 0.1
+      PathDist.scale: 32.0
+      GoalDist.scale: 24.0
+/wheelchair/dwb_preview/local_costmap/local_costmap:
+  ros__parameters:
+    use_sim_time: false
+    global_frame: odom
+    robot_base_frame: wheelchair_control_center_estimated
+    rolling_window: true
+    width: 10
+    height: 10
+    resolution: 0.05
+    update_frequency: 10.0
+    publish_frequency: 5.0
+    transform_tolerance: 0.15
+    track_unknown_space: true
+    footprint: '[[-0.184,-0.358],[0.766,-0.358],[0.766,0.202],[-0.184,0.202]]'
+    footprint_padding: 0.05
+    plugins: [static_layer, inflation_layer]
+    static_layer:
+      plugin: nav2_costmap_2d::StaticLayer
+      map_topic: /wheelchair/planning_map
+      map_subscribe_transient_local: true
+    inflation_layer:
+      plugin: nav2_costmap_2d::InflationLayer
+      inflation_radius: 0.55
+      cost_scaling_factor: 3.0

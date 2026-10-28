@@ -11,16 +11,12 @@ cloud_to_scan:
     cluster_filter_enabled: true
     ground_filter_enabled: true
     ground_z: -0.456
-    # Ground band is +/-8 cm; obstacles within this band are classified as ground.
-    ground_tolerance: 0.08
+    # Ground band is +/-15 cm; obstacles within this band are classified as ground.
+    ground_tolerance: 0.15
     obstacle_height: 0.90
     # Legacy slice is used ONLY when ground_filter_enabled=false.
     height_min: -0.203
     height_max: 0.397
-    range_min: 0.15
-    # Must exceed the 5 m local map half-width: returns beyond range_max are
-    # dropped, so open space past it would leave the front unknown.
-    range_max: 20.0
     angle_min: -3.14159265
     angle_max:  3.14159265
     angular_resolution: 0.5   # degrees per bin
@@ -32,6 +28,8 @@ odom_relay:
     source_topic: /odin1/odometry_highfreq
     target_topic: /wheelchair/odom
     child_frame_id: base_link
+    source_linear_in_world: true
+    publish_control_center: true
     imu_source_topic: /odin1/imu
     imu_target_topic: /wheelchair/imu
 

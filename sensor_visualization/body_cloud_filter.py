@@ -62,7 +62,7 @@ class BodyCloudFilter(Node):
         super().__init__('body_cloud_filter')
         self.declare_parameter('body_frame', 'base_link')
         self.frame = self.get_parameter('body_frame').value
-        defaults = {'x_min': -0.42, 'x_max': 0.63, 'y_min': -0.40, 'y_max': 0.40}
+        defaults = {'x_min': -0.42, 'x_max': 0.53, 'y_min': -0.275, 'y_max': 0.275}
         for key, value in defaults.items():
             self.declare_parameter(key, value)
         self.bounds = tuple(self.get_parameter(k).value for k in defaults)

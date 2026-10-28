@@ -1,0 +1,42 @@
+{
+  "repository": "http://packages.ros.org/ros2/ubuntu/",
+  "architecture": "arm64",
+  "packages": [
+    {
+      "Package": "ros-humble-costmap-queue",
+      "Version": "1.1.20-1jammy.20260916.140038",
+      "SHA256": "61abc7b85f68ce24e6c2dc04e3e7fd6767490c6cc12ddd3873a033bba3f4143a",
+      "Filename": "pool/main/r/ros-humble-costmap-queue/ros-humble-costmap-queue_1.1.20-1jammy.20260916.140038_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-dwb-core",
+      "Version": "1.1.20-1jammy.20260916.130615",
+      "SHA256": "6aff373886061267252652fecdb220dc67e08946a841996e44f031e434e7d0d3",
+      "Filename": "pool/main/r/ros-humble-dwb-core/ros-humble-dwb-core_1.1.20-1jammy.20260916.130615_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-dwb-critics",
+      "Version": "1.1.20-1jammy.20260916.140436",
+      "SHA256": "5e71d43513e3c1007ea79517de3368457510935031105113c7a8cbd0630f49f7",
+      "Filename": "pool/main/r/ros-humble-dwb-critics/ros-humble-dwb-critics_1.1.20-1jammy.20260916.140436_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-dwb-msgs",
+      "Version": "1.1.20-1jammy.20260907.230913",
+      "SHA256": "6df8e036ef644773b9722e15a9f1d975a84f3108faa4b45902205a77ab19953e",
+      "Filename": "pool/main/r/ros-humble-dwb-msgs/ros-humble-dwb-msgs_1.1.20-1jammy.20260907.230913_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-dwb-plugins",
+      "Version": "1.1.20-1jammy.20260916.131350",
+      "SHA256": "1cbfbee3069ca0aa367c70c4c907bbfd3f511696e3f3097e46ecd3ffb83cc096",
+      "Filename": "pool/main/r/ros-humble-dwb-plugins/ros-humble-dwb-plugins_1.1.20-1jammy.20260916.131350_arm64.deb"
+    },
+    {
+      "Package": "ros-humble-nav2-controller",
+      "Version": "1.1.20-1jammy.20260916.131334",
+      "SHA256": "ca84b35e0e02aff3d7919730cb63afc78aa80e38662ee9c88b6c1fbd34eba0f9",
+      "Filename": "pool/main/r/ros-humble-nav2-controller/ros-humble-nav2-controller_1.1.20-1jammy.20260916.131334_arm64.deb"
+    }
+  ]
+}

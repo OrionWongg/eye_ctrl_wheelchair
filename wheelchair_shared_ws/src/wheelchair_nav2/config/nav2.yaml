@@ -6,6 +6,13 @@
     max_search_expansions: 12000
     obstacle_cost_weight: 1.0
     heuristic_weight: 4.0
+    # Discrete-search state deduplication. Poses inside one bucket collapse to
+    # one node, so this is the knob that decides whether a usable turn position
+    # exists at all. Shared with the lattice run so both see the same tolerance.
+    state_cell: 0.10
+    state_heading_bins: 72
+    # Search-only reserve; connectors and the executed path keep `margin`.
+    search_sampling_margin: 0.0
 /wheelchair/local_costmap/local_costmap:
   ros__parameters:
     global_frame: odom

@@ -117,6 +117,10 @@ class WhillControllerNode(Node):
         self.navigation_control_enabled = bool(self.get_parameter('navigation_control_enabled').value)
         self.declare_parameter('navigation_hold_to_run', False)
         self.navigation_hold_to_run = bool(self.get_parameter('navigation_hold_to_run').value)
+        self.declare_parameter('rviz_goal_authority_enabled', False)
+        self.rviz_goal_authority_enabled = bool(self.get_parameter('rviz_goal_authority_enabled').value)
+        from .goal_lease import GoalLease
+        self.goal_lease = GoalLease()
         self.navigation_keys_held = set()
         self.navigation_keys_suppressed = set()
         self.navigation_hold_job = None
@@ -127,6 +131,9 @@ class WhillControllerNode(Node):
         self.navigation_received_at = None
         self.navigation_stamp = 0
         self.navigation_target = None
+        self.declare_parameter('navigation_continuous_mapping', False)
+        self.navigation_continuous_mapping = bool(self.get_parameter('navigation_continuous_mapping').value)
+        self.navigation_point = None
         self.declare_parameter('keyboard_auto_drag', False)
         self.keyboard_auto_drag = bool(
             self.get_parameter('keyboard_auto_drag').value)
@@ -199,6 +206,7 @@ class WhillControllerNode(Node):
         self.get_logger().info(
             f'iPad calibration: {self.calibration_file} SHA256={self.calibration_sha256}')
         self._load_calibration_points()
+        self.navigation_full_coordinates = dict(self.calibration_coordinates)
         if self.eye_control_enabled and (
                 not self.whill_mode or
                 set(LOCKED_TARGET_NAMES.values()) - set(self.calibration_coordinates)):
@@ -239,6 +247,9 @@ class WhillControllerNode(Node):
                 String, '/wheelchair/keyboard/gui_key', 10)
             self.navigation_sub = self.create_subscription(
                 TwistStamped, '/whill/controller/navigation', self.on_navigation_command, 1)
+            if self.rviz_goal_authority_enabled:
+                self.goal_authority_sub = self.create_subscription(
+                    String, '/wheelchair/goal_authority', self.on_goal_authority, 1)
         if self.eye_control_enabled:
             if self.unified_ui:
                 self.ui_sub = self.create_subscription(
@@ -777,6 +788,7 @@ class WhillControllerNode(Node):
 
         if self.navigation_control_enabled:
             self.navigation_keys_suppressed.update(self.navigation_keys_held)
+            self.goal_lease.revoke()
             self.navigation_keys_held.clear()
             self.publish_navigation_key('s')
 
@@ -1053,6 +1065,11 @@ class WhillControllerNode(Node):
             payload, ensure_ascii=False, separators=(',', ':'))
         self.event_pub.publish(message)
 
+    def on_goal_authority(self, message):
+        self.goal_lease.receive(message.data, self.get_clock().now().nanoseconds/1e9,
+                                time.monotonic(), self.keyboard_armed)
+        self.update_navigation_drive()
+
     def on_navigation_command(self, message):
         """Opt-in navigation transport; requires local Arm and APP calibration."""
         if not self.navigation_control_enabled:
@@ -1061,17 +1078,26 @@ class WhillControllerNode(Node):
         age = (self.get_clock().now().nanoseconds - stamp) / 1e9
         v = message.twist.linear; w = message.twist.angular
         values = (v.x, v.y, v.z, w.x, w.y, w.z)
-        if (message.header.frame_id != 'base_link' or not all(math.isfinite(x) for x in values)
+        expected_frames = ('base_link', 'wheelchair_control_center_estimated') if self.navigation_continuous_mapping else ('base_link',)
+        if (message.header.frame_id not in expected_frames or not all(math.isfinite(x) for x in values)
                 or not 0 <= age < .2 or stamp <= self.navigation_stamp
                 or any(abs(x) > 1e-6 for x in (v.y, v.z, w.x, w.y))
-                or v.x < 0 or (abs(v.x) > .05 and abs(w.z) > .05)):
+                or v.x < 0 or (not self.navigation_continuous_mapping and abs(v.x) > .05 and abs(w.z) > .05)):
             if self.keyboard_armed:
                 self.toggle_keyboard_arm()
             return
         self.navigation_stamp = stamp
         self.navigation_received_at = time.monotonic()
-        self.navigation_target = ('w' if v.x > .05 else
-                                  'a' if w.z > .05 else 'd' if w.z < -.05 else None)
+        if self.navigation_continuous_mapping:
+            from .velocity_mapping import map_velocity
+            # Existing legacy bridge sends semantic forward/turn velocities.
+            # Explicit continuous sources must use the fitted control-center frame.
+            point, _ = map_velocity(v.x, w.z, self.navigation_full_coordinates)
+            self.navigation_point = point
+            self.navigation_target = ('w' if point != self.navigation_full_coordinates['steering wheel center'] else None)
+        else:
+            self.navigation_target = ('w' if v.x > .05 else
+                                      'a' if w.z > .05 else 'd' if w.z < -.05 else None)
         self.update_navigation_drive()
 
     def update_navigation_drive(self):
@@ -1082,9 +1108,12 @@ class WhillControllerNode(Node):
             self.toggle_keyboard_arm()
             return
         self.keys_down.difference_update(self.movement_keys)
-        if (self.navigation_hold_to_run and not self.navigation_keys_held):
+        if (self.navigation_hold_to_run and not self.navigation_keys_held
+                and not self.goal_lease.valid(time.monotonic())):
             self.update_keyboard_target()
             return
+        if self.navigation_continuous_mapping and self.navigation_point is not None:
+            self.calibration_coordinates['forward'] = self.navigation_point
         if self.navigation_target is not None:
             self.keys_down.add(self.navigation_target)
         # Reuse the tested keyboard press/drag/release path and calibration.
@@ -1364,6 +1393,7 @@ class WhillControllerNode(Node):
 
     def stop_navigation_hold(self):
         """Release locally now; also revoke the upstream navigation task."""
+        self.goal_lease.revoke()
         self.navigation_keys_suppressed.update(self.navigation_keys_held)
         self.navigation_keys_held.clear()
         self.publish_navigation_key('s')
@@ -1387,7 +1417,7 @@ class WhillControllerNode(Node):
             return
         # Focus moves between widgets are allowed; leaving the app stops motion.
         def check():
-            if not self.closing and self.root.focus_displayof() is None:
+            if not self.closing and self.root.focus_displayof() is None and self.navigation_keys_held:
                 self.stop_navigation_hold()
         self.root.after_idle(check)
 
@@ -1411,6 +1441,10 @@ class WhillControllerNode(Node):
             key = ' ' if key == 'space' else key
             if key in ('w', 'a', 'd', 'u', 'c', ' ', 's'):
                 if self.keyboard_armed or key in (' ', 's'):
+                    if self.goal_lease.task:
+                        self.goal_lease.revoke()
+                        self.navigation_target = None
+                        self.update_navigation_drive()
                     if self.navigation_hold_to_run:
                         if key in (' ', 's'):
                             self.stop_navigation_hold()

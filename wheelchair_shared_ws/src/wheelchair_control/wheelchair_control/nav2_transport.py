@@ -95,9 +95,7 @@ class Nav2PathClient:
         m=self.kind.Request();m.header.frame_id='odom';m.header.stamp=self.node.get_clock().now().to_msg()
         m.task_id=task_id;m.request_id=token;m.start=Pose2D(x=float(start[0]),y=float(start[1]),theta=float(start[2]))
         m.goals=[Pose2D(x=float(p[0]),y=float(p[1]),theta=float(p[2])) for p in goals]
-        # No corridor band: the service field stays zero (unconstrained).
-        m.max_path_length=float(max_length);m.corridor_half_width=0.
-        m.corridor_origin=Pose2D(x=0.,y=0.,theta=0.)
+        m.max_path_length=float(max_length)
         m.allow_detour=allow_detour
         self.last_report=dict(request_id=token,task_id=task_id,start=start,goals=goals,
             frame_id=m.header.frame_id,max_path_length=max_length,allow_detour=allow_detour,

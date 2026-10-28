@@ -57,6 +57,28 @@ if [[ -d "$NAV2_PREFIX" ]]; then
     export PYTHONPATH="$NAV2_PREFIX/local/lib/python3.10/dist-packages:${PYTHONPATH:-}"
 fi
 
+# Load the optional plugin index and its libraries for the selected backend.
+PLANNER_BACKEND=discrete
+for argument in "$@"; do
+    case "$argument" in path_planner:=*) PLANNER_BACKEND="${argument#path_planner:=}";; esac
+done
+if [[ "$PLANNER_BACKEND" == smac_lattice ]]; then
+    SMAC_PREFIX="$WHEELCHAIR_WORKSPACE/vendor/smac/opt/ros/humble"
+    if [[ ! -f "$SMAC_PREFIX/lib/libnav2_smac_planner_lattice.so" ]]; then
+        echo "Missing Smac runtime. Run: python3 $WHEELCHAIR_WORKSPACE/scripts/install_smac_runtime.py" >&2
+        exit 1
+    fi
+    export AMENT_PREFIX_PATH="$SMAC_PREFIX:${AMENT_PREFIX_PATH:-}"
+    export LD_LIBRARY_PATH="$SMAC_PREFIX/lib:$SMAC_PREFIX/lib/aarch64-linux-gnu:${LD_LIBRARY_PATH:-}"
+fi
+
+# Existing native DWB runtime for opt-in continuous lower-layer execution.
+DWB_PREFIX="$WHEELCHAIR_WORKSPACE/vendor/dwb/opt/ros/humble"
+if [[ -d "$DWB_PREFIX" ]]; then
+    export AMENT_PREFIX_PATH="$DWB_PREFIX:${AMENT_PREFIX_PATH:-}"
+    export LD_LIBRARY_PATH="$DWB_PREFIX/lib:$DWB_PREFIX/lib/aarch64-linux-gnu:${LD_LIBRARY_PATH:-}"
+fi
+
 # Reject stale overlays that would silently run another checkout.
 for package in wheelchair_control wheelchair_hardware_bridge wheelchair_nav2 whill_controller; do
     prefix="$(ros2 pkg prefix "$package")"

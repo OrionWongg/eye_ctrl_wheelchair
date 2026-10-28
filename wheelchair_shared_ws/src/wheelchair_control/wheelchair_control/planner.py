@@ -51,6 +51,12 @@ class Config:
     path_lookahead: float = 2.0
     uturn_timeout: float = 35.
     path_replan_distance: float = .55
+    # Held-direction cruise: the next segment is requested once the committed
+    # path ahead is shorter than braking distance + speed * plan budget, and a
+    # pending extension may carry the chair at most path_overrun past the
+    # validated end before the follower brakes for it.
+    path_plan_budget: float = .8
+    path_overrun: float = .3
     path_timeout: float = 1.0
     costmap_timeout: float = .5
     context_assist_enter: float = .45
@@ -138,10 +144,10 @@ class Predictor:
     """
     BRAKE_STEP=.05  # seconds between swept braking poses
     def __init__(self,cfg): self.cfg=cfg
-    def check(self,state,action,obstacles,boundary,reference=None,run=None):
+    def check(self,state,action,obstacles,boundary,reference=None,run=None,velocity=None):
         c=self.cfg;pad=c.padding
         if not isinstance(obstacles,IndexedObstacles):obstacles=IndexedObstacles(obstacles)
-        tv,tw=c.velocity(action)
+        tv,tw=c.velocity(action) if velocity is None else velocity
         if run is not None:
             tv=math.copysign(min(abs(tv),abs(state.v)+c.linear_accel*run),tv)
             tw=math.copysign(min(abs(tw),abs(state.w)+c.angular_accel*run),tw)
@@ -183,6 +189,7 @@ class Decision:
     action: int
     state: str
     reason: str
+    velocity: object = None
 
 class Planner:
     def __init__(self,cfg):
@@ -268,7 +275,11 @@ class Planner:
             from .navigation import NavigationScope
             if self.task_scope is None:
                 self.cancel()
-                self.task_scope=NavigationScope(self,p) if p.task_kind in (3,4,5,6,7,8,9) else TaskScope(self,p)
+                if p.task_kind == 10:
+                    from .pose_goal import PoseGoalScope
+                    self.task_scope = PoseGoalScope(self, p)
+                else:
+                    self.task_scope=NavigationScope(self,p) if p.task_kind in (3,4,5,6,7,8,9) else TaskScope(self,p)
                 self.reference=self.task_scope.reference
             return self.task_scope.tick(p,state,obstacles,boundary,now,stopped)
         if p.task_kind:

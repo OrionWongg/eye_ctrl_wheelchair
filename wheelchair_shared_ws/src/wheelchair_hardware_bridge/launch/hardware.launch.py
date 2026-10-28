@@ -14,6 +14,7 @@ Key args (same as shared.launch.py where compatible):
   eye_sample_mode   fusion (default) | stamped | legacy
   input_source      eye (default) | keyboard
 """
+from pathlib import Path
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
@@ -44,6 +45,8 @@ def generate_launch_description():
     # ---------------------------------------------------------------- configs
     bridge_cfg = bridge_share + '/config/hardware_bridge.yaml'
     timing_cfg = bridge_share + '/config/hardware_timing.yaml'
+    source_root=Path(__file__).resolve().parents[2]
+    dwb_cfg=str(source_root/'wheelchair_nav2/config/dwb_preview.yaml')
 
     # ---------------------------------------------------------- substitutions
     interaction = LaunchConfiguration('interaction_mode')
@@ -54,6 +57,15 @@ def generate_launch_description():
     mode = LaunchConfiguration('mode')
     nav2_config = LaunchConfiguration('nav2_config')
     config = LaunchConfiguration('config')
+    # Shared by both planner executables: switching backend must not change the
+    # geometry or the budget the search is given, only the search itself.
+    search_params = {
+        'state_cell': ParameterValue(LaunchConfiguration('state_cell'), value_type=float),
+        'state_heading_bins': ParameterValue(LaunchConfiguration('state_heading_bins'), value_type=int),
+        'search_sampling_margin': ParameterValue(
+            LaunchConfiguration('search_sampling_margin'), value_type=float),
+        'search_time_limit': ParameterValue(
+            LaunchConfiguration('search_time_limit'), value_type=float)}
 
     smac = PythonExpression([
         "'", interaction, "' == 'directional_intent' and '",
@@ -73,10 +85,29 @@ def generate_launch_description():
                               choices=['gaze_joystick', 'intent_confirm', 'directional_intent']),
         DeclareLaunchArgument('path_planner', default_value='discrete',
                               choices=['discrete', 'smac_lattice']),
+        # A/B knobs, applied identically to whichever backend is selected.
+        DeclareLaunchArgument('state_cell', default_value='0.10',
+                              description='Discrete-search position deduplication cell (m)'),
+        DeclareLaunchArgument('state_heading_bins', default_value='72',
+                              description='Discrete-search heading deduplication bins'),
+        DeclareLaunchArgument('search_sampling_margin', default_value=PythonExpression(["'0.05' if '", LaunchConfiguration('path_planner'), "' == 'smac_lattice' else '0.0'"]),
+                              description='Search-only footprint reserve (m); connectors keep the hard margin'),
+        DeclareLaunchArgument('search_time_limit', default_value=PythonExpression(["'0.35' if '", LaunchConfiguration('path_planner'), "' == 'smac_lattice' else '0.25'"]),
+                              description='Planner service budget (s)'),
         DeclareLaunchArgument('input_source', default_value='eye'),
+        DeclareLaunchArgument('rviz', default_value='false', choices=['true','false']),
+        DeclareLaunchArgument('rviz_config', default_value=''),
+        Node(package='rviz2', executable='rviz2',
+             condition=IfCondition(LaunchConfiguration('rviz')),
+             arguments=['-d', LaunchConfiguration('rviz_config')],
+             parameters=[{'use_sim_time': False}], output='screen'),
+        DeclareLaunchArgument('enable_rviz_goal', default_value='false', choices=['true','false']),
         DeclareLaunchArgument('lidar_mode', default_value='both', choices=['both','201','202']),
         LogInfo(msg='Single lidar costmap inspection: physical wheelchair output is disabled.',
                 condition=IfCondition(PythonExpression(["'", lidar_mode, "' != 'both'"]))),
+        DeclareLaunchArgument('continuous_navigation', default_value='false', choices=['true','false']),
+        DeclareLaunchArgument('velocity_topic', default_value='/wheelchair/sim/drive'),
+        DeclareLaunchArgument('continuous_velocity_input', default_value='false', choices=['true','false']),
         DeclareLaunchArgument('hardware_output', default_value='true', choices=['true', 'false']),
         DeclareLaunchArgument('eye_sample_mode', default_value='fusion',
                               choices=['legacy', 'stamped', 'fusion']),
@@ -98,7 +129,9 @@ def generate_launch_description():
              name='cloud_to_scan', parameters=[bridge_cfg,
                  {'lidar_mode': ParameterValue(lidar_mode, value_type=str)}], output='screen'),
         Node(package='wheelchair_hardware_bridge', executable='twist_to_key',
-             name='twist_to_key', condition=IfCondition(output_enabled), parameters=[bridge_cfg], output='screen'),
+             name='twist_to_key', condition=IfCondition(output_enabled), parameters=[bridge_cfg,
+                 {'source_topic': LaunchConfiguration('velocity_topic'),
+                  'continuous_input': ParameterValue(PythonExpression(["'", LaunchConfiguration('continuous_navigation'), "' == 'true' or '", LaunchConfiguration('continuous_velocity_input'), "' == 'true'"]), value_type=bool)}], output='screen'),
 
         # ------------------------------------------- wheelchair_control stack
         # intent_mux (legacy gaze_joystick mode)
@@ -125,6 +158,7 @@ def generate_launch_description():
              condition=IfCondition(directional),
              parameters=[ctrl_share + '/config/tasks.yaml', config, timing_cfg,
                          {'allow_dynamic_map': True, 'input_source': LaunchConfiguration('input_source'),
+                          'enable_rviz_goal': ParameterValue(LaunchConfiguration('enable_rviz_goal'), value_type=bool),
                           'use_sim_time': False}],
              output='screen'),
 
@@ -144,18 +178,35 @@ def generate_launch_description():
         # path planners
         Node(package='wheelchair_nav2', executable='discrete_path_planner',
              condition=IfCondition(discrete),
-             parameters=[config, timing_cfg, nav2_config, {'use_sim_time': False}], output='screen'),
+             parameters=[config, timing_cfg, nav2_config, search_params,
+                         {'use_sim_time': False}], output='screen'),
         Node(package='wheelchair_nav2', executable='smac_lattice_interface',
              condition=IfCondition(smac),
+             # search_params must come last: a later parameters entry overrides
+             # an earlier one, and smac_lattice.yaml also defines
+             # search_sampling_margin / search_time_limit.
              parameters=[config, timing_cfg, nav2_config,
                          nav_share + '/config/smac_lattice.yaml',
+                         search_params,
                          {'use_sim_time': False,
                           'Lattice.lattice_filepath':
                           nav_share + '/config/wheelchair_lattice.json'}]),
 
+        # Native Nav2 controller; the lower safety gate owns FollowPath actions.
+        Node(package='nav2_controller', executable='controller_server',
+             namespace='wheelchair/dwb_preview', name='controller_server',
+             condition=IfCondition(LaunchConfiguration('continuous_navigation')),
+             parameters=[dwb_cfg],
+             remappings=[('cmd_vel','/wheelchair/dwb_preview/cmd_vel')], output='screen'),
+        Node(package='nav2_lifecycle_manager', executable='lifecycle_manager',
+             namespace='wheelchair/dwb_preview', name='lifecycle_manager',
+             condition=IfCondition(LaunchConfiguration('continuous_navigation')),
+             parameters=[{'use_sim_time':False,'autostart':True,'node_names':['controller_server']}],output='screen'),
+
         # executor
         Node(package='wheelchair_control', executable='executor',
-             parameters=[config, timing_cfg, {'use_sim_time': False}], output='screen'),
+             parameters=[config, timing_cfg, {'use_sim_time': False,
+                 'continuous_navigation': ParameterValue(LaunchConfiguration('continuous_navigation'),value_type=bool)}], output='screen'),
 
         # safety_gate
         Node(package='wheelchair_control', executable='safety_gate',
@@ -172,6 +223,7 @@ def generate_launch_description():
              parameters=[config, ctrl_share + '/config/directional.yaml', timing_cfg,
                          {'use_sim_time': False,
                           'allow_dynamic_map': True,
+                          'continuous_navigation': ParameterValue(LaunchConfiguration('continuous_navigation'),value_type=bool),
                           'mode': mode,
                           # Keyboard runs hold-to-run: a stopped A/D turns while
                           # held. Eye input keeps one bounded heading per gesture.
@@ -208,6 +260,8 @@ def generate_launch_description():
                  'whill_mode': True,
                  'keyboard_auto_drag': True,
                  'navigation_control_enabled': True,
+                 'navigation_continuous_mapping': True,
+                 'rviz_goal_authority_enabled': ParameterValue(LaunchConfiguration('enable_rviz_goal'), value_type=bool),
                  'navigation_hold_to_run': ParameterValue(PythonExpression([
                      "'", LaunchConfiguration('input_source'), "' == 'keyboard'"]), value_type=bool),
              }],

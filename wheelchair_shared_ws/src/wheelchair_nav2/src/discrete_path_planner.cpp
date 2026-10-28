@@ -43,6 +43,8 @@ class DiscretePlanner : public rclcpp::Node {
     const std::vector<std::pair<std::string,double>> model={{"forward_speed",forward_},{"left_speed",left_},{"right_speed",right_},
       {"linear_accel",parameter("linear_accel",.6)},{"angular_accel",parameter("angular_accel",.8)},
       {"linear_brake",parameter("linear_brake",.5)},{"angular_brake",parameter("angular_brake",.7)},
+      {"forward_prediction_time",parameter("forward_prediction_time",.60)},
+      {"turn_prediction_time",parameter("turn_prediction_time",.30)},
       {"startup_delay",parameter("startup_delay",.12)},{"stop_dwell",parameter("stop_dwell",.15)}};
     for(auto &p:model) context_->declare_parameter("fixed."+p.first,p.second);
     generator_=loader_.createSharedInstance("wheelchair_nav2::FixedActionGenerator");generator_->initialize(context_,"fixed");
@@ -60,8 +62,19 @@ class DiscretePlanner : public rclcpp::Node {
     }
     auto points=declare_parameter<std::vector<double>>("footprint",{-.45,-.30,.55,-.30,.55,.30,-.45,.30});
     if(points.size()<6 || points.size()%2) throw std::invalid_argument("Invalid footprint");
-    for(size_t i=0;i<points.size();i+=2) {geometry_msgs::msg::Point p;p.x=points[i];p.y=points[i+1];footprint_.push_back(p);}
-    footprint_=rounded_padding(footprint_,parameter("margin",.06));
+    for(size_t i=0;i<points.size();i+=2) {geometry_msgs::msg::Point p;p.x=points[i];p.y=points[i+1];body_.push_back(p);}
+    const double margin=parameter("margin",.06);
+    footprint_=rounded_padding(body_,margin);
+    // State deduplication is the only place this search is approximate: two
+    // poses in the same bucket are treated as one node. Exposed so a coarse
+    // bucket can be compared against a fine one on the same map and goal.
+    state_cell_=parameter("state_cell",.10);state_bins_=declare_parameter<int>("state_heading_bins",72);
+    if(!std::isfinite(state_cell_)||state_cell_<=0||state_bins_<8||state_bins_>720)throw std::invalid_argument("Invalid state quantization");
+    // Optional search-only reserve, mirroring smac_search's contour margin. The
+    // connector and the final path are always rechecked with the hard margin.
+    sampling_=parameter("search_sampling_margin",0.);
+    if(!std::isfinite(sampling_)||sampling_<0||sampling_>.15)throw std::invalid_argument("Invalid search sampling margin");
+    search_footprint_=sampling_>0?rounded_padding(body_,margin+sampling_):footprint_;
     timeout_=parameter("search_time_limit",.25);map_timeout_=parameter("costmap_timeout",.5);
     obstacle_weight_=parameter("obstacle_cost_weight",1.0);
     heuristic_weight_=parameter("heuristic_weight",4.0);
@@ -95,21 +108,21 @@ class DiscretePlanner : public rclcpp::Node {
  private:
   bool fresh() const {return map_ && std::chrono::duration<double>(Clock::now()-map_received_).count()<map_timeout_ &&
       (now()-map_stamp_).seconds()>=-.05 && (now()-map_stamp_).seconds()<map_timeout_;}
-  bool valid(const Pose &p,const Pose &origin,double band) {
+  bool valid(const Pose &p,const nav2_costmap_2d::Footprint *footprint=nullptr) {
+    const auto &shape=footprint?*footprint:footprint_;
     if(!std::isfinite(p.x)||!std::isfinite(p.y)||!std::isfinite(p.theta))return false;
-    if(band>0 && std::abs(-(p.x-origin.x)*std::sin(origin.theta)+(p.y-origin.y)*std::cos(origin.theta))>band)return false;
     unsigned int x,y;if(!map_->worldToMap(p.x,p.y,x,y)||map_->getCost(x,y)>=254)return false;
     nav2_costmap_2d::FootprintCollisionChecker<nav2_costmap_2d::Costmap2D *> checker(map_.get());
-    double cost=checker.footprintCostAtPose(p.x,p.y,p.theta,footprint_);
+    double cost=checker.footprintCostAtPose(p.x,p.y,p.theta,shape);
     return cost>=0 && cost<254;
   }
-  bool connect(const Pose &start,const Pose &goal,const Pose &origin,double band,std::vector<Pose> &out,int half_turn_sign=1) {
+  bool connect(const Pose &start,const Pose &goal,std::vector<Pose> &out,int half_turn_sign=1) {
     out={start};Pose cur=start;
     auto rotate=[&](double target) {
       double delta=wrap(target-cur.theta);
       if(std::abs(std::abs(delta)-M_PI)<1e-6)delta=half_turn_sign*M_PI;
       const int n=std::max(1,int(std::ceil(std::abs(delta)/.025)));const double original=cur.theta;
-      for(int i=1;i<=n;++i) {cur.theta=original+delta*i/n;if(!valid(cur,origin,band))return false;out.push_back(cur);}
+      for(int i=1;i<=n;++i) {cur.theta=original+delta*i/n;if(!valid(cur))return false;out.push_back(cur);}
       return true;
     };
     if(distance(start,goal)>1e-5) {
@@ -117,18 +130,19 @@ class DiscretePlanner : public rclcpp::Node {
       if(!rotate(heading))return false;
       const int n=std::max(1,int(std::ceil(distance(start,goal)/.025)));
       for(int i=1;i<=n;++i) {cur.x=start.x+(goal.x-start.x)*i/n;cur.y=start.y+(goal.y-start.y)*i/n;
-        if(!valid(cur,origin,band))return false;out.push_back(cur);}
+        if(!valid(cur))return false;out.push_back(cur);}
     }
     return rotate(goal.theta);
   }
   std::string key(const Pose &p) {
-    return std::to_string(std::lround(p.x/.10))+":"+std::to_string(std::lround(p.y/.10))+":"+
-      std::to_string((int(std::lround(wrap(p.theta)/(M_PI/8)))+16)%16);
+    const double step=2*M_PI/state_bins_;
+    return std::to_string(std::lround(p.x/state_cell_))+":"+std::to_string(std::lround(p.y/state_cell_))+":"+
+      std::to_string((int(std::lround(wrap(p.theta)/step))+state_bins_)%state_bins_);
   }
-  bool search(const Pose &start,const Pose &goal,const Pose &origin,double band,double max_length,
+  bool search(const Pose &start,const Pose &goal,double max_length,
               std::vector<Pose> &result,uint32_t &expansions,Clock::time_point deadline,bool allow_detour) {
-    if(!valid(start,origin,band)||!valid(goal,origin,band))return false;
-    if(connect(start,goal,origin,band,result) || connect(start,goal,origin,band,result,-1))return distance(start,goal)<=max_length;
+    if(!valid(start)||!valid(goal))return false;
+    if(connect(start,goal,result) || connect(start,goal,result,-1))return distance(start,goal)<=max_length;
     // A locked doorway is a route constraint, not merely an endpoint. Searching
     // around another doorway would silently change the user's selected entry.
     if(!allow_detour)return false;
@@ -141,7 +155,7 @@ class DiscretePlanner : public rclcpp::Node {
       if(best[key(current.pose)]+1e-6<current.cost)continue;
       std::vector<Pose> tail;
       if(distance(current.pose,goal)<.55 && current.length+distance(current.pose,goal)<=max_length &&
-         (connect(current.pose,goal,origin,band,tail)||connect(current.pose,goal,origin,band,tail,-1))) {
+         (connect(current.pose,goal,tail)||connect(current.pose,goal,tail,-1))) {
         std::vector<int> lineage;for(int i=index;i>=0;i=nodes[i].parent)lineage.push_back(i);
         std::reverse(lineage.begin(),lineage.end());result.clear();
         for(auto i:lineage)result.insert(result.end(),nodes[i].edge.begin(),nodes[i].edge.end());
@@ -154,7 +168,7 @@ class DiscretePlanner : public rclcpp::Node {
         const Pose next=trajectory.back();double length=current.length+distance(current.pose,next);
         if(length+distance(next,goal)>max_length)continue;
         bool free=true;double cost=0;
-        for(const auto &pose:trajectory) {if(!valid(pose,origin,band)){free=false;break;}
+        for(const auto &pose:trajectory) {if(!valid(pose,&search_footprint_)){free=false;break;}
           unsigned int x,y;map_->worldToMap(pose.x,pose.y,x,y);cost+=map_->getCost(x,y)/252.;}
         if(!free)continue;
         const double duration=rclcpp::Duration(primitive.time_offsets.back()).seconds();
@@ -171,9 +185,9 @@ class DiscretePlanner : public rclcpp::Node {
                wheelchair_interfaces::srv::ComputeDiscretePath::Response &out) {
     const auto begin=Clock::now();out.header.stamp=now();out.header.frame_id="odom";out.task_id=r.task_id;out.request_id=r.request_id;
     out.reason="INVALID_REQUEST";
-    if(r.header.frame_id!="odom"||r.task_id.empty()||r.goals.empty()||r.goals.size()>8||!std::isfinite(r.max_path_length)||r.max_path_length<=0||r.max_path_length>12||!std::isfinite(r.corridor_half_width)||r.corridor_half_width<0)return;
+    if(r.header.frame_id!="odom"||r.task_id.empty()||r.goals.empty()||r.goals.size()>8||!std::isfinite(r.max_path_length)||r.max_path_length<=0||r.max_path_length>12)return;
     auto finite=[](const Pose &p){return std::isfinite(p.x)&&std::isfinite(p.y)&&std::isfinite(p.theta);};
-    if(!finite(r.start)||!finite(r.corridor_origin)||!std::all_of(r.goals.begin(),r.goals.end(),finite))return;
+    if(!finite(r.start)||!std::all_of(r.goals.begin(),r.goals.end(),finite))return;
     if(!fresh()){out.reason="COSTMAP_STALE";return;}
     out.costmap_stamp=map_stamp_;
     const double age=(now()-rclcpp::Time(r.header.stamp)).seconds();if(age<-.05||age>1.){out.reason="STALE_REQUEST";return;}
@@ -181,15 +195,11 @@ class DiscretePlanner : public rclcpp::Node {
     Pose start=r.start;std::vector<Pose> poses;double remaining=r.max_path_length;
     for(const auto &goal:r.goals) {
       std::vector<Pose> part;
-      auto outside=[&](const Pose &p){const auto &o=r.corridor_origin;return r.corridor_half_width>0 &&
-        std::abs(-(p.x-o.x)*std::sin(o.theta)+(p.y-o.y)*std::cos(o.theta))>r.corridor_half_width;};
-      if(outside(start))out.reason="START_OUTSIDE_CORRIDOR";
-      else if(outside(goal))out.reason="GOAL_OUTSIDE_CORRIDOR";
-      else if(!valid(start,r.corridor_origin,0))out.reason="START_COLLISION";
-      else if(!valid(goal,r.corridor_origin,0))out.reason="GOAL_COLLISION";
+      if(!valid(start))out.reason="START_COLLISION";
+      else if(!valid(goal))out.reason="GOAL_COLLISION";
       else out.reason="";
       if(!out.reason.empty()) {out.compute_ms=std::chrono::duration<double,std::milli>(Clock::now()-begin).count();return;}
-      if(!search(start,goal,r.corridor_origin,r.corridor_half_width,remaining,part,out.expansions,deadline,r.allow_detour)) {
+      if(!search(start,goal,remaining,part,out.expansions,deadline,r.allow_detour)) {
         out.reason=Clock::now()>=deadline?"SEARCH_TIMEOUT":out.expansions>=unsigned(max_expansions_)?"SEARCH_EXPANSION_LIMIT":
           !r.allow_detour?"LOCKED_ROUTE_BLOCKED":"NO_EXECUTABLE_PATH";out.compute_ms=std::chrono::duration<double,std::milli>(Clock::now()-begin).count();return;
       }
@@ -207,9 +217,10 @@ class DiscretePlanner : public rclcpp::Node {
   std::shared_ptr<dwb_core::TrajectoryGenerator> generator_;
   std::vector<dwb_msgs::msg::Trajectory2D> primitives_;
   std::unique_ptr<nav2_costmap_2d::Costmap2D> map_;
-  nav2_costmap_2d::Footprint footprint_;
+  nav2_costmap_2d::Footprint body_,footprint_,search_footprint_;
   rclcpp::Time map_stamp_{0,0,RCL_ROS_TIME};Clock::time_point map_received_;
-  double forward_,left_,right_,timeout_,map_timeout_,obstacle_weight_,heuristic_weight_;int max_expansions_;
+  double forward_,left_,right_,timeout_,map_timeout_,obstacle_weight_,heuristic_weight_;
+  double state_cell_,sampling_;int state_bins_,max_expansions_;
   std::string session_;uint64_t sequence_=0;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr grid_sub_;
   rclcpp::Publisher<wheelchair_interfaces::msg::InputHealth>::SharedPtr health_;

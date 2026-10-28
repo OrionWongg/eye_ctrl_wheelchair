@@ -55,3 +55,10 @@ projects/EYETLE/install
 
 # Sensor launcher runtime lock
 sensor_visualization/.start.lock
+
+# Recorded sessions and downloaded DWB runtime
+bag/
+._*
+diagnostics/**/*.npz
+wheelchair_shared_ws/vendor/dwb/*
+!wheelchair_shared_ws/vendor/dwb/manifest.json

@@ -14,7 +14,7 @@ void FixedActionGenerator::initialize(const nav2_util::LifecycleNode::SharedPtr 
   forward_=param("forward_speed",.372);left_=param("left_speed",.389);right_=param("right_speed",.403);
   linear_accel_=param("linear_accel",.6);angular_accel_=param("angular_accel",.8);
   linear_brake_=param("linear_brake",.5);angular_brake_=param("angular_brake",.7);
-  distance_=param("translation_step",.25);angle_=param("rotation_step",M_PI/8);
+  forward_hold_=param("forward_prediction_time",.60);turn_hold_=param("turn_prediction_time",.30);
   step_=param("integration_step",.02);startup_=param("startup_delay",.12);dwell_=param("stop_dwell",.15);
   nav_2d_msgs::msg::Twist2D c;commands_.push_back(c);
   c.x=forward_;commands_.push_back(c);c.x=0;c.theta=left_;commands_.push_back(c);c.theta=-right_;commands_.push_back(c);
@@ -51,11 +51,9 @@ dwb_msgs::msg::Trajectory2D FixedActionGenerator::generateTrajectory(
   if(command.x==0 && command.theta==0) return out;
   phase(dwell_+startup_,0,0,true);
   const bool drive=command.x!=0;
-  const double speed=drive?forward_:std::abs(command.theta),accel=drive?linear_accel_:angular_accel_,brake=drive?linear_brake_:angular_brake_;
-  const double length=drive?distance_:angle_;
-  const double ramp_distance=.5*speed*speed*(1/accel+1/brake);
-  const double on=length<ramp_distance?std::sqrt(2*length/(accel*(1+accel/brake))):speed/accel+(length-ramp_distance)/speed;
-  phase(on,command.x,command.theta,false);
+  // These times bound the planning rollout only; they never stop the actuator.
+  // Predict a held direction, rather than solve for an ideal distance/angle.
+  phase(drive?forward_hold_:turn_hold_,command.x,command.theta,false);
   phase(std::max(std::abs(v)/linear_brake_,std::abs(w)/angular_brake_),0,0,true);
   return out;
 }

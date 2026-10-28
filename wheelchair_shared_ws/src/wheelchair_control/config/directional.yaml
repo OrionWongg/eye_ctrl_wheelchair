@@ -9,6 +9,10 @@
     nav_turn_envelope: 0.17453292519943295
     path_lookahead: 2.0
     path_replan_distance: 0.55
+    # Request the next cruise segment once committed path < braking distance
+    # + forward_speed * path_plan_budget; allow this much overrun while it is in flight.
+    path_plan_budget: 0.8
+    path_overrun: 0.3
     path_timeout: 1.0
     costmap_timeout: 0.5
     uturn_timeout: 35.0

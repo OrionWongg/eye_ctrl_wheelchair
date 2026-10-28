@@ -7,7 +7,7 @@
 - 使用官方未修改的 **Nav2 Humble 1.1.20 `nav2_smac_planner/SmacPlannerLattice`** 插件。
 - 新建 `/wheelchair/smac/compute_discrete_path` 服务，沿用现有 `wheelchair_interfaces/srv/ComputeDiscretePath` 请求/响应格式，避免改动输入、任务授权和执行器协议。
 - 新服务只有规划、路径和健康输出，没有底盘速度或动作发布器。
-- 普通可绕行请求先检查能否直接用直线/原地转向到达；直达失败才调用原生 Smac 搜索。`allow_detour=false` 的锁定入口、停车原地转向以及“前进＋转向”候选，按请求的直线/原地转向顺序作完整几何验证，不允许 Smac 改换路线。响应明确区分 `SMAC_LATTICE_PLANNED`（实际 Smac 搜索）、`SMAC_DIRECT_ROUTE_VALIDATED`（直达检查）和 `SMAC_LOCKED_ROUTE_VALIDATED`（锁定路线检查）。
+- 普通可绕行请求先检查能否直接用直线/原地转向到达；直达失败才调用原生 Smac 搜索。`allow_detour=false` 的锁定入口、停车原地转向以及“前进＋转向”候选，按请求的直线/原地转向顺序作完整几何验证，不允许 Smac 改换路线。成功响应统一为 `PLANNED`。
 - 不会在 Smac 搜索失败后悄悄改用旧 DWB 搜索；返回失败交由现有任务逻辑处理。
 
 ## 运动模型与安全接口
@@ -24,7 +24,7 @@ Smac 的原始路径不是底盘授权。接口把它作为路径点参考，转
 | `model_error` | 0.025 m | 原模型误差，未修改 |
 | `step` | 0.025 s | 原预测采样补偿，未修改 |
 | `free_space_clearance` | 0.08 m | 沿用原规划器的绕行跟踪余量，防止实际提前停车后转不动 |
-| `smac_search_sampling_margin` | 0.05 m | 只加在 Smac 搜索轮廓上，补偿栅格/角度采样误差 |
+| `search_sampling_margin` | 0.05 m | 只加在 Smac 搜索轮廓上，补偿栅格/角度采样误差 |
 
 原硬外扩仍约每侧 9.28 cm。Smac 搜索轮廓额外留 5 cm，并使用外包八边形近似降低栅格轮廓计算开销；自由空间绕行的输出转换保留原有 8 cm 跟踪余量（起终点不满足该软余量时退回硬余量）；直达/锁定路线和现有安全控制层使用原硬余量，执行阶段继续复核完整停车轨迹。这会使实验后端在部分窄处更保守，不能将它理解为原车辆尺寸或全局安全参数已经改变。
 
@@ -41,7 +41,7 @@ Smac 的原始路径不是底盘授权。接口把它作为路径点参考，转
 | `/wheelchair/smac/raw_plan` | `nav_msgs/msg/Path`；原生 Smac 输出，仅用于观察 |
 | `/wheelchair/local_plan` | 现有客户端发布的已转换执行路径 |
 
-请求使用 `odom` 坐标系，保留 `task_id`、`request_id`、目标序列、路径长度上限、走廊约束和 `allow_detour`。地图必须新鲜、分辨率为 0.05 m。过期请求、过期/不匹配地图、未知空间、无法执行的路径和越出请求预算的路径均被拒绝。
+请求使用 `odom` 坐标系，保留 `task_id`、`request_id`、目标序列、路径长度上限和 `allow_detour`。走廊检查已移除；服务中的 corridor_origin / corridor_half_width 仅为兼容保留，不参与判定。地图必须新鲜、分辨率为 0.05 m。过期请求、过期/不匹配地图、未知空间、无法执行的路径和越出请求预算的路径均被拒绝。
 
 原生插件没有通过 `createPlan` 暴露展开节点数，因此响应中的 `expansions` 暂为 0，不代表实际没有搜索；`compute_ms` 是接口实测总计算时间。
 
@@ -114,10 +114,16 @@ colcon build --symlink-install --base-paths src --packages-select wheelchair_nav
 - [Humble 运动基元格式与差速原地旋转说明](https://github.com/ros-navigation/navigation2/blob/humble/nav2_smac_planner/lattice_primitives/README.md)
 - [固定版本 1.1.20 的实现](https://github.com/ros-navigation/navigation2/tree/1.1.20/nav2_smac_planner)
 
-## 本轮最终结果
+## 历史验收结果（2026-10-16）
 
 完整回归 **368 passed**，两包构建成功，独立服务 **11/11** 验收通过。新后端 Gazebo 功能用例 **6/7** 通过；`path_obstacle` 实际绕障返回 `PATH_NO_EXECUTABLE_PATH`，尚未通过。原默认后端两项对照通过。因此接口保持实验可选状态，默认仍为原规划器。
 
 部分已有 Python 节点在 SIGINT 关闭期间出现回调转换异常，原后端对照也复现；新 Smac 插件进程的独立卸载崩溃已修复。功能通过与关闭异常分开记录。
 
 完整总结：[WHEELCHAIR_SMAC_STATE_LATTICE_HUMBLE_SUMMARY.md](../../projects/WHEELCHAIR_SMAC_STATE_LATTICE_HUMBLE_SUMMARY.md)。最终证据：`artifacts/smac-lattice-20261016/verification.json`。
+
+## A/B 参数与当前限制（2026-10-28）
+
+两种 launch 均按后端选择默认值：discrete 的搜索余量 / 总预算为 0.0 m / 0.25 s，Smac 为 0.05 m / 0.35 s。显式传入 search_sampling_margin、search_time_limit 可覆盖配置文件；公平比较时需显式设置相同值。state_heading_bins 只控制 discrete 去重，不改变 Smac JSON 的 16 航向。
+
+真机数据表明转向存在平移，当前原地旋转模型尚未经实车验证；更换弧线 JSON 还需要同步修改执行和安全预测链路。上述历史验收不代表本轮端到端验收。

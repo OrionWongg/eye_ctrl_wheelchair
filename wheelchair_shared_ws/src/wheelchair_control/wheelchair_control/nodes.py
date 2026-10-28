@@ -14,13 +14,13 @@ from rclpy.time import Time
 from rclpy.serialization import serialize_message
 from rclpy.qos import qos_profile_sensor_data, QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from rcl_interfaces.msg import SetParametersResult
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist,TwistStamped
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Empty,String
 from tf2_ros import Buffer,TransformListener
 from wheelchair_interfaces.msg import ControlIntent,DiscreteAction,ControlStatus,ExecutionStatus,ObstacleMap
-from .protocol import Packet,StreamGuard,ClockGuard,STOP,LEFT,RIGHT
+from .protocol import Packet,StreamGuard,ClockGuard,STOP,FORWARD,LEFT,RIGHT
 from .geometry import convex,IndexedPolygon,nearby_obstacles
 from .planner import Config,Planner,State,Decision
 from .executor import Executor
@@ -58,6 +58,7 @@ class PlannerNode(Node):
         super().__init__('wheelchair_safety_gate')
         backend=self.declare_parameter('navigation_backend','none').value
         self.declare_parameter('path_planner_backend','nav2_dwb')
+        self.continuous_navigation=bool(self.declare_parameter('continuous_navigation',False).value)
         self.allow_dynamic_map=self.declare_parameter('allow_dynamic_map',False).value
         self.cfg=config(self);self.core=Planner(self.cfg)
         if backend not in ('none','nav2'):raise ValueError('Invalid navigation backend')
@@ -66,6 +67,10 @@ class PlannerNode(Node):
             from .nav2_transport import Nav2PathClient
             self.path_client=Nav2PathClient(self)
             self.core.path_provider=self.path_client
+        if self.continuous_navigation:
+            from .continuous_nav import ContinuousNavigation
+            self.core.continuous_controller=ContinuousNavigation(self)
+        self.velocity_pub=self.create_publisher(TwistStamped,'/wheelchair/velocity_safe',COMMAND_QOS)
         self.session=str(uuid.uuid4());self.sequence=0
         self.intent_guard=StreamGuard(.25);self.map_guard=StreamGuard(self.cfg.map_age);self.exec_guard=StreamGuard(.25)
         self.clock_guard=ClockGuard()
@@ -206,6 +211,18 @@ class PlannerNode(Node):
             action.max_run_ms=round(self.core.last_diagnostics['task_pulse_duration']*1000)
         else:
             action.max_run_ms=round(self.cfg.micro_turn_min*1000) if decision.reason=='USER_MICRO_TURN' else 0
+        if self.continuous_navigation:
+            velocity=decision.velocity
+            if velocity is None:
+                velocity=((0.,0.),(.548,0.),(0.,.821),(0.,-.800))[decision.action]
+                if decision.action!=STOP:
+                    checked=self.core.continuous_controller.checked(self.core,self.state,local_obstacles,self.boundary,velocity,decision.reason)
+                    if checked.action==STOP:
+                        action.action=STOP;decision=checked;velocity=(0.,0.)
+            command=TwistStamped();command.header.stamp=stamp
+            command.header.frame_id=self.session+':'+str(self.sequence)
+            command.twist.linear.x=float(velocity[0]);command.twist.angular.z=float(velocity[1])
+            self.velocity_pub.publish(command)
         self.actions.publish(action);self.last_action=decision.action
         published=time.monotonic()
         status=ControlStatus();status.header=action.header;status.session_id=self.session;status.sequence=self.sequence
@@ -226,12 +243,25 @@ class PlannerNode(Node):
         if self.sequence%4==0 and self.markers.get_subscription_count():
             self.markers.publish(safety_markers(stamp,self.sequence,self.state,self.cfg,self.core.last_diagnostics))
         key=(decision.action,decision.reason,self.core.ready)
-        if key!=self.last_log:self.get_logger().info(json.dumps(trace));self.last_log=key
+        if key != self.last_log:
+            self.get_logger().debug(json.dumps(trace))
+            if decision.state in ('BLOCKED', 'FAULT'):
+                detail = {'task_id': trace['task_id'], 'reason': decision.reason,
+                          'executor_reason': trace['executor_reason']}
+                for field in ('momentum_brake_risk', 'path_search',
+                              'task_heading_error', 'task_heading_stagnant_pulses'):
+                    if field in self.core.last_diagnostics:
+                        detail[field] = self.core.last_diagnostics[field]
+                self.get_logger().warning('Motion blocked: ' + json.dumps(detail))
+            self.last_log = key
         self.previous_callback_ms=(time.monotonic()-now)*1000
 
 class ExecutorNode(Node):
     def __init__(self):
         super().__init__('wheelchair_executor')
+        self.continuous_navigation=bool(self.declare_parameter('continuous_navigation',False).value)
+        self.velocity_commands={};self.accepted_action_key=None
+        self.create_subscription(TwistStamped,'/wheelchair/velocity_safe',self.on_velocity,COMMAND_QOS)
         self.cfg=config(self);self.core=Executor(self.cfg)
         self.guard=StreamGuard(self.cfg.action_ttl);self.clock_guard=ClockGuard()
         self.session=str(uuid.uuid4());self.seq=0;self.odom_received=-math.inf;self.odom_stamp=0.;self.v=self.w=0.;self.last_tick=None;self.action_timing={};self.last_timing_reason=None
@@ -241,6 +271,12 @@ class ExecutorNode(Node):
         self.create_subscription(DiscreteAction,'/wheelchair/action_safe',self.on_action,COMMAND_QOS)
         self.create_subscription(Odometry,'/wheelchair/odom',self.on_odom,SENSOR_QOS)
         self.create_timer(self.cfg.period,self.tick,clock=Clock(clock_type=ClockType.STEADY_TIME))
+    def on_velocity(self,msg):
+        values=(msg.twist.linear.x,msg.twist.linear.y,msg.twist.linear.z,msg.twist.angular.x,msg.twist.angular.y,msg.twist.angular.z)
+        if not all(math.isfinite(v) for v in values) or not 0<=values[0]<=.549 or abs(values[5])>.822 or any(abs(v)>1e-6 for v in values[1:5]):return
+        self.velocity_commands[msg.header.frame_id]=(source_seconds(msg.header.stamp),values[0],values[5])
+        if len(self.velocity_commands)>8:self.velocity_commands.pop(next(iter(self.velocity_commands)))
+
     def on_action(self,msg):
         now=time.monotonic();ros_now=sim_time(self)
         previous=self.action_timing.get('receive_monotonic')
@@ -260,6 +296,7 @@ class ExecutorNode(Node):
                               if self.cfg.micro_turn_min-1e-9<=duration<=self.cfg.minimum_action+1e-9)
         if msg.max_run_ms and (msg.action not in (LEFT,RIGHT) or msg.max_run_ms not in allowed_limits):
             self.core.new_session(now);self.core.reason='INVALID_RUN_LIMIT';return
+        self.accepted_action_key=msg.session_id+':'+str(msg.sequence)
         self.core.request(msg.action,now,msg.max_run_ms/1000 if msg.max_run_ms else None)
     def on_odom(self,msg):
         self.odom_received=-math.inf
@@ -273,8 +310,31 @@ class ExecutorNode(Node):
         self.last_tick=now
         clock_fault=self.clock_guard.update(ros_now,now)
         healthy=not clock_fault
-        a,stopped=self.core.tick(now,self.v,self.w,healthy,self.guard.fresh(now))
-        msg=Twist();msg.linear.x,msg.angular.z=self.cfg.velocity(a);self.drive.publish(msg)
+        if self.continuous_navigation:
+            command=self.velocity_commands.get(self.accepted_action_key)
+            valid=bool(healthy and self.guard.fresh(now) and command and self.core.session_ready)
+            v,w=(command[1],command[2]) if valid and self.core.desired!=STOP else (0.,0.)
+            if self.core.run_limit is not None:
+                if self.core.running_at is None and (v or w):self.core.running_at=now
+                if self.core.limit_reached or (self.core.running_at is not None and now-self.core.running_at>=self.core.run_limit):
+                    self.core.limit_reached=True;v=w=0.
+            low=abs(self.v)<.015 and abs(self.w)<.025
+            if low:self.core.low_since=self.core.low_since or now
+            else:self.core.low_since=None
+            stopped=bool(self.core.low_since is not None and now-self.core.low_since>=self.core.settle)
+            a=FORWARD if v>1e-6 else LEFT if w>1e-6 else RIGHT if w< -1e-6 else STOP
+            if a==STOP and self.core.output!=STOP:self.core.transition_at=now
+            self.core.phase='RUNNING' if a!=STOP else 'STOPPED' if stopped else 'STOPPING'
+            self.core.reason='CONTINUOUS_VELOCITY' if a!=STOP else 'STOP_REQUEST' if valid else 'CONTINUOUS_INPUT_STALE'
+            if not healthy:self.core.phase='FAULT';self.core.reason='ODOM_FAULT'
+            if a==STOP and not stopped and now-self.core.transition_at>self.core.stop_timeout:
+                self.core.phase='FAULT';self.core.reason='STOP_TIMEOUT'
+            self.core.output=a
+            msg=Twist();msg.linear.x=v;msg.angular.z=w
+        else:
+            a,stopped=self.core.tick(now,self.v,self.w,healthy,self.guard.fresh(now))
+            msg=Twist();msg.linear.x,msg.angular.z=self.cfg.velocity(a)
+        self.drive.publish(msg)
         status=ExecutionStatus();status.header.stamp=self.get_clock().now().to_msg();status.header.frame_id='base_link'
         self.seq+=1;status.session_id=self.session;status.sequence=self.seq
         status.action_session_id=self.guard.session or '';status.action_sequence=max(0,self.guard.sequence)
@@ -285,7 +345,10 @@ class ExecutorNode(Node):
                 receipt_age_ms=(now-self.action_timing['receive_monotonic'])*1000 if self.action_timing else None,
                 callback_ms=(time.monotonic()-now)*1000,reason=status.reason)
             self.timing.publish(String(data=json.dumps(timing)))
-            if status.reason!=self.last_timing_reason:self.get_logger().info(json.dumps(timing))
+            if status.reason != self.last_timing_reason:
+                self.get_logger().debug(json.dumps(timing))
+                if self.core.phase == 'FAULT':
+                    self.get_logger().warning('Executor fault: ' + status.reason)
             self.last_timing_reason=status.reason
 
 def run(cls):

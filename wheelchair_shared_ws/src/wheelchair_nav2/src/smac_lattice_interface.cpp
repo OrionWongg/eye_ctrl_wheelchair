@@ -62,7 +62,10 @@ class SmacInterface:public rclcpp::Node {
     double margin=parameter("margin",.06);
     for(double v:{speed,left,right,margin})if(!std::isfinite(v)||v<=0)throw std::invalid_argument("Invalid safety parameter");
     double padding=margin;
-    padding_=padding;footprint_=rounded_padding(body_,padding);snapshot_=std::make_shared<SnapshotCostmap>();double sampling=parameter("smac_search_sampling_margin",.05);sampling_=sampling;
+    padding_=padding;footprint_=rounded_padding(body_,padding);snapshot_=std::make_shared<SnapshotCostmap>();
+    // Same key as the discrete planner so one shared parameter file sets both
+    // backends to the same search conservatism during an A/B comparison.
+    double sampling=parameter("search_sampling_margin",.05);sampling_=sampling;
     if(!std::isfinite(sampling)||sampling<0||sampling>.15)throw std::invalid_argument("Invalid search sampling margin");
     // Circumscribed octagonal padding remains conservative but reduces the
     // Smac grid checker from ~36 edges to ~12 per pose. Final distance checks
@@ -129,7 +132,6 @@ class SmacInterface:public rclcpp::Node {
   }
   bool valid(const Pose&p){
     if(expired())return false;
-    if(band_>0&&std::abs(-(p.x-origin_.x)*std::sin(origin_.theta)+(p.y-origin_.y)*std::cos(origin_.theta))>band_)return false;
     nav2_costmap_2d::Footprint body;nav2_costmap_2d::transformFootprint(p.x,p.y,p.theta,body_,body);
     double x0=1e30,y0=1e30,x1=-1e30,y1=-1e30;
     for(const auto&v:body){x0=std::min(x0,v.x);y0=std::min(y0,v.y);x1=std::max(x1,v.x);y1=std::max(y1,v.y);}
@@ -164,7 +166,6 @@ class SmacInterface:public rclcpp::Node {
     if(connect(start,goal,out)||connect(start,goal,out,-1))return true;
     validation_padding_=padding_;
     snapshot_->footprint(rounded_padding(body_,validation_padding_+sampling_,8));
-    used_smac_=true;
     auto raw=planner_->createPlan(stamped(start),stamped(goal));raw_pub_->publish(raw);
     if(raw.poses.empty()||raw.poses.size()>10000||expired())return false;
     std::vector<Pose> points;for(const auto&m:raw.poses){
@@ -222,17 +223,19 @@ class SmacInterface:public rclcpp::Node {
   void compute(const wheelchair_interfaces::srv::ComputeDiscretePath::Request&r,
                wheelchair_interfaces::srv::ComputeDiscretePath::Response&out,Clock::time_point begin){
     out.reason="INVALID_REQUEST";auto finite=[](const Pose&p){return std::isfinite(p.x)&&std::isfinite(p.y)&&std::isfinite(p.theta);};
-    if(r.header.frame_id!="odom"||r.task_id.empty()||r.goals.empty()||r.goals.size()>8||!finite(r.start)||!finite(r.corridor_origin)||
-       !std::all_of(r.goals.begin(),r.goals.end(),finite)||!std::isfinite(r.max_path_length)||r.max_path_length<=0||r.max_path_length>12||
-       !std::isfinite(r.corridor_half_width)||r.corridor_half_width<0)return;
+    if(r.header.frame_id!="odom"||r.task_id.empty()||r.goals.empty()||r.goals.size()>8||!finite(r.start)||
+       !std::all_of(r.goals.begin(),r.goals.end(),finite)||!std::isfinite(r.max_path_length)||r.max_path_length<=0||r.max_path_length>12)return;
     if(!fresh()){out.reason="COSTMAP_STALE";return;}
     double age=(now()-rclcpp::Time(r.header.stamp)).seconds();if(age<-.05||age>1.){out.reason="STALE_REQUEST";return;}
     out.costmap_stamp=map_stamp_;deadline_=begin+std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(timeout_));
-    origin_=r.corridor_origin;band_=r.corridor_half_width;used_smac_=false;Pose start=r.start;std::vector<Pose> path;
+    Pose start=r.start;std::vector<Pose> path;
     double remaining=r.max_path_length;
+    // Same rejection order and reason vocabulary as discrete_path_planner, so a
+    // run of one backend can be diffed against the other without translation.
     for(const auto&goal:r.goals){
       validation_padding_=padding_;
-      if(!valid(start)){out.reason="START_COLLISION";return;}if(!valid(goal)){out.reason="GOAL_COLLISION";return;}
+      if(!valid(start)){out.reason="START_COLLISION";return;}
+      if(!valid(goal)){out.reason="GOAL_COLLISION";return;}
       std::vector<Pose> part;
       bool ok=r.allow_detour?lattice(start,goal,part):(connect(start,goal,part)||connect(start,goal,part,-1));
       if(!ok){out.reason=expired()?"SEARCH_TIMEOUT":r.allow_detour?"NO_EXECUTABLE_PATH":"LOCKED_ROUTE_BLOCKED";return;}
@@ -242,13 +245,15 @@ class SmacInterface:public rclcpp::Node {
     }
     if(!fresh()||expired()){out.reason="SEARCH_TIMEOUT";return;}
     out.path.header=out.header;for(const auto&p:path)out.path.poses.push_back(stamped(p));
-    out.success=true;out.reason=!r.allow_detour?"SMAC_LOCKED_ROUTE_VALIDATED":used_smac_?"SMAC_LATTICE_PLANNED":"SMAC_DIRECT_ROUTE_VALIDATED";
+    // Whether the native lattice searched is observable on raw_plan; the reason
+    // stays in the shared vocabulary so both backends compare directly.
+    out.success=true;out.reason="PLANNED";
   }
   pluginlib::ClassLoader<nav2_core::GlobalPlanner>&loader_;
   nav2_util::LifecycleNode::SharedPtr context_;
   std::shared_ptr<SnapshotCostmap> snapshot_;nav2_core::GlobalPlanner::Ptr planner_;
   nav2_costmap_2d::Costmap2D*map_=nullptr;nav2_costmap_2d::Footprint body_,footprint_;
-  bool configured_=false,valid_map_=false,used_smac_=false;double timeout_,map_timeout_,padding_=0.,validation_padding_=0.,sampling_=0.,band_=0.;Pose origin_;
+  bool configured_=false,valid_map_=false;double timeout_,map_timeout_,padding_=0.,validation_padding_=0.,sampling_=0.;
   rclcpp::Time map_stamp_{0,0,RCL_ROS_TIME};Clock::time_point map_received_,deadline_;
   std::string session_;uint64_t sequence_=0;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr raw_pub_;

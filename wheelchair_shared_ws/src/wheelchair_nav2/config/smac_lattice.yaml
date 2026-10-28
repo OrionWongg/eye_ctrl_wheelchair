@@ -4,8 +4,10 @@
     search_time_limit: 0.35
     costmap_timeout: 0.5
     # Search-only reserve for grid/heading sampling; final continuous check
-    # and the existing safety gate retain their original hard margin.
-    smac_search_sampling_margin: 0.05
+    # and the existing safety gate retain their original hard margin. Shared
+    # key name with discrete_path_planner so one value drives both backends.
+    # 0.0 is the parity setting for A/B runs; the launch file overrides it.
+    search_sampling_margin: 0.05
     Lattice:
       tolerance: 0.0
       allow_unknown: false

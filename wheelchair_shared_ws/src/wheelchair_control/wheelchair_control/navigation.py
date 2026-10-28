@@ -30,6 +30,7 @@ class NavigationScope:
 
     def cancel(self):
         self.adjustment.cancel()
+        if self.follower is not None and hasattr(self.follower,"cancel"):self.follower.cancel()
         if self.provider and self.pending is not None:self.provider.cancel(self.pending)
         self.pending=None
 
@@ -60,7 +61,10 @@ class NavigationScope:
         try:
             if kind=='APPEND' and self.follower and not self.follower.done:
                 self.follower.append(value)
-            else:self.follower=PathFollower(self.owner,value,self.task_id)
+            else:
+                self.follower=(self.owner.continuous_controller.follower(self.owner,value,self.task_id)
+                               if getattr(self.owner,"continuous_controller",None) else PathFollower(self.owner,value,self.task_id))
+                self.follower.open_ended=self.phase=='CRUISE'
         except ValueError:
             return self.owner.trip('INVALID_EXECUTABLE_PATH')
         self.replanning=False
@@ -108,11 +112,16 @@ class NavigationScope:
                 goal=self.follower.last_goal;self.follower=None
                 self.request(state.pose,[goal],'CRUISE')
             return Decision(STOP,'ASSISTING','PATH_WAIT_PLAN')
-        if self.pending is None and now>=self.next_goal_check and self.follower.remaining(state)<self.cfg.path_replan_distance:
-            self.next_goal_check=now+self.cfg.goal_check_period
+        # Keep a planning-latency budget of committed path beyond braking
+        # distance. Only a failed attempt is throttled; a pending request
+        # already prevents duplicates.
+        if (self.pending is None and now>=self.next_goal_check and
+                self.follower.remaining(state)<self.follower.replan_distance(state)):
             start=self.follower.last_goal
             goal=self.cruise_goal(start,state,obstacles)
             if goal is not None:self.request(start,[goal],'APPEND')
+            else:self.next_goal_check=now+self.cfg.goal_check_period
+        self.follower.extending=self.pending is not None and self.pending_kind=='APPEND'
         d=self.follower.tick(state,obstacles,boundary,now,stopped)
         if self.adjustment.active or self.owner.latch:return d
         if self.follower.done:
@@ -199,7 +208,10 @@ class NavigationScope:
         cmd=LEFT if self.side>0 else RIGHT
         result=self.owner.predictor.check(state,cmd,obstacles,boundary)
         self.owner.last_diagnostics['candidate']=result.summary()
-        if result.safe:return Decision(cmd,'ASSISTING','NAV_CONTINUOUS_TURN')
+        if result.safe:
+            controller=getattr(self.owner,'continuous_controller',None)
+            if controller:return controller.checked(self.owner,state,obstacles,boundary,(0.,.821 if cmd==LEFT else -.800),'NAV_CONTINUOUS_TURN')
+            return Decision(cmd,'ASSISTING','NAV_CONTINUOUS_TURN')
         return Decision(STOP,'ASSISTING','NAV_TURN_WAIT_CLEARANCE')
 
     def finish(self,state):

@@ -12,7 +12,7 @@ class FixedActionGenerator : public dwb_core::TrajectoryGenerator {
   dwb_msgs::msg::Trajectory2D generateTrajectory(const geometry_msgs::msg::Pose2D &,const nav_2d_msgs::msg::Twist2D &,const nav_2d_msgs::msg::Twist2D &) override;
   void setSpeedLimit(const double &,const bool &) override;
  private:
-  double forward_,left_,right_,linear_accel_,angular_accel_,linear_brake_,angular_brake_,step_,distance_,angle_,startup_,dwell_;
+  double forward_,left_,right_,linear_accel_,angular_accel_,linear_brake_,angular_brake_,step_,forward_hold_,turn_hold_,startup_,dwell_;
   std::vector<nav_2d_msgs::msg::Twist2D> commands_;
   size_t next_=0;
   bool limited_=false;

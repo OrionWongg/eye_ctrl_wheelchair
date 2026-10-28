@@ -94,8 +94,6 @@ class CloudToScan(Node):
         self.declare_parameter('obstacle_height', 0.90)
         self.declare_parameter('height_min', -0.15)  # metres in base_link
         self.declare_parameter('height_max',  0.15)
-        self.declare_parameter('range_min', 0.15)
-        self.declare_parameter('range_max', 8.0)
         self.declare_parameter('angle_min', -math.pi)
         self.declare_parameter('angle_max',  math.pi)
         self.declare_parameter('angular_resolution', 0.5)  # degrees
@@ -140,8 +138,6 @@ class CloudToScan(Node):
         target = p('target_frame').get_parameter_value().string_value
         h_min = p('height_min').get_parameter_value().double_value
         h_max = p('height_max').get_parameter_value().double_value
-        r_min = p('range_min').get_parameter_value().double_value
-        r_max = p('range_max').get_parameter_value().double_value
         a_min = p('angle_min').get_parameter_value().double_value
         a_max = p('angle_max').get_parameter_value().double_value
         res_deg = p('angular_resolution').get_parameter_value().double_value
@@ -172,8 +168,8 @@ class CloudToScan(Node):
 
         obstacle_parts, ground_parts, suppressed_parts = [], [], []
         for pts in all_pts:
-            body = ((pts[:, 0] >= -0.45) & (pts[:, 0] <= 0.55) &
-                    (pts[:, 1] >= -0.30) & (pts[:, 1] <= 0.30))
+            body = ((pts[:, 0] >= -0.42) & (pts[:, 0] <= 0.53) &
+                    (pts[:, 1] >= -0.275) & (pts[:, 1] <= 0.275))
             pts = pts[~body]
             if p('ground_filter_enabled').value:
                 ground, pts = classify_ground(
@@ -182,8 +178,6 @@ class CloudToScan(Node):
                 ground_parts.append(ground)
             else:
                 pts = pts[(pts[:, 2] >= h_min) & (pts[:, 2] <= h_max)]
-            radius = np.hypot(pts[:, 0], pts[:, 1])
-            pts = pts[(radius >= r_min) & (radius <= r_max)]
             suppressed = np.zeros(len(pts), dtype=bool)
             if getattr(self, '_cluster_enabled', False):
                 from .cluster_filter import small_cluster_mask
@@ -200,10 +194,8 @@ class CloudToScan(Node):
         ranges_2d = np.hypot(pts[:, 0], pts[:, 1])
         angles = np.arctan2(pts[:, 1], pts[:, 0])
 
-        # Range filter
-        valid = (ranges_2d >= r_min) & (ranges_2d <= r_max)
-        pts2 = ranges_2d[valid]
-        ang2 = angles[valid]
+        pts2 = ranges_2d
+        ang2 = angles
 
         # Build LaserScan
         n_bins = max(1, round((a_max - a_min) / res))
@@ -227,8 +219,10 @@ class CloudToScan(Node):
         msg.angle_increment = res
         msg.time_increment = 0.0
         msg.scan_time = 0.1
-        msg.range_min = float(r_min)
-        msg.range_max = float(r_max)
+        # No radial cutoff; retain finite LaserScan metadata for consumers.
+        msg.range_min = 0.0
+        # Stay below the generated ROS Python float32 bound after wire rounding.
+        msg.range_max = 1.0e6
         msg.ranges = scan_ranges.tolist()
         self._pub.publish(msg)
 

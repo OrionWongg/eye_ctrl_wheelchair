@@ -7,7 +7,8 @@ here, so one start_sensors.sh run owns the whole sensor-side tree:
   odom -> base_link -> {imu, lidar, camera_0, base_footprint,
                         mid360_201_local, mid360_202_local}
 
-MID360 roll=180 deg, pitch=-1 deg; right .201 yaw=+10 deg, left .202 yaw=0 deg.
+MID360 both roll=180 deg (inverted); right .201 pitch=-1 deg, yaw=0 deg;
+left .202 pitch=0 deg, yaw=-1 deg.
 Odin lidar/imu axes are aligned with base_link (identity rotation).
 camera_0 RPY/xyz derived from odin_ws calib.yaml Tcl_0 (camera<-lidar, optical
 z fwd / x right / y down) composed with base_link<-lidar=(0.18,0.28,0.23).
@@ -36,7 +37,7 @@ def static_tf(name, parent, child, xyz, rpy=(0.0, 0.0, 0.0)):
 def generate_launch_description():
     # Fixed-axis RPY relative to base_link: Rz(yaw) * Ry(pitch) * Rx(roll).
     right_mid360_rpy = (pi, radians(-1.0), radians(0.0))
-    left_mid360_rpy = (pi, radians(-1.0), radians(-1.0))
+    left_mid360_rpy = (pi, radians(0.0), radians(-1.0))
     # camera_0 optical frame (z fwd, x right, y down) vs base_link (x fwd, y left, z up).
     # T_base_cam = T_base_lidar @ inv(Tcl_0) from odin_ws calib.yaml.
     camera_0_xyz = (0.187415, 0.309663, 0.219460)

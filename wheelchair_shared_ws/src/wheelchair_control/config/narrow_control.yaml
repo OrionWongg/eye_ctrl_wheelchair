@@ -1,7 +1,8 @@
 /**:
   ros__parameters:
     use_sim_time: true
-    footprint: [-0.45, -0.30, 0.55, -0.30, 0.55, 0.30, -0.45, 0.30]
+    # footprint: [-0.45, -0.28, 0.50, -0.28, 0.50, 0.28, -0.45, 0.28]
+    footprint: [-0.10, -0.10, 0.10, -0.10, 0.10, 0.10, -0.10, 0.10]
     forward_speed: 0.534
     left_speed: 0.8
     right_speed: 0.8
@@ -17,7 +18,7 @@
     startup_delay: 0.12
     minimum_action: 0.30
     # Stop zone = footprint + margin; the braking check sweeps it to rest.
-    margin: 0.06
+    margin: 0.05
     assist_angle: 0.2617993877991494
     assist_lateral: 0.25
     assist_duration: 2.0

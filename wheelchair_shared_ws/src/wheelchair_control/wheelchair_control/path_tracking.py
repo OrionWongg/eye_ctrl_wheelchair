@@ -98,6 +98,9 @@ class PathFollower:
         self.parts=segments(poses);self.index=0;self.turn=None
         self.braking=False;self.done=not self.parts;self.blocked=False
         self.correction=False;self.last_goal=tuple(poses[-1]);self.last_action=STOP
+        # open_ended: cruise path whose end is a rolling horizon, not a goal.
+        # extending: a continuation of that path is being planned right now.
+        self.open_ended=False;self.extending=False
 
     @property
     def current(self):return self.parts[self.index] if self.index<len(self.parts) else None
@@ -116,6 +119,18 @@ class PathFollower:
         part=self.current
         if part is None:return 0.
         return math.dist(state.pose[:2],part.end[:2])+sum(math.dist(p.start[:2],p.end[:2]) for p in self.parts[self.index+1:])
+
+    def brake_distance(self,state):
+        c=self.cfg
+        feedback_age=state.feedback_age if state.feedback_age is not None else state.observation_age
+        delay=c.transport_delay+c.period+(feedback_age or 0.)
+        peak=min(c.forward_speed,max(0.,state.v)+c.linear_accel*delay)
+        return (max(0.,state.v)+peak)*delay/2+peak*peak/(2*c.linear_brake)
+
+    def replan_distance(self,state):
+        """Committed path that must remain ahead so a continuation can arrive before braking."""
+        c=self.cfg
+        return max(c.path_replan_distance,self.brake_distance(state)+c.forward_speed*c.path_plan_budget)
 
     def advance(self):
         self.index+=1;self.turn=None;self.braking=False
@@ -148,12 +163,13 @@ class PathFollower:
         h=part.start[2];dx,dy=part.end[0]-state.x,part.end[1]-state.y
         along=dx*math.cos(h)+dy*math.sin(h)
         lateral=-dx*math.sin(h)+dy*math.cos(h)
-        if along < -c.nav_position_tolerance:return self.owner.trip('PATH_ENDPOINT_OVERSHOOT')
-        feedback_age=state.feedback_age if state.feedback_age is not None else state.observation_age
-        delay=c.transport_delay+c.period+(feedback_age or 0.)
-        peak=min(c.forward_speed,max(0.,state.v)+c.linear_accel*delay)
-        brake=(max(0.,state.v)+peak)*delay/2+peak*peak/(2*c.linear_brake)
-        if self.braking or along<=max(c.nav_position_tolerance,brake):
+        # A cruise path may be overrun while its continuation is in flight; the
+        # collision envelope is still checked every cycle above.
+        overrun=c.path_overrun if self.open_ended else 0.
+        if along < -c.nav_position_tolerance-overrun:return self.owner.trip('PATH_ENDPOINT_OVERSHOOT')
+        brake=self.brake_distance(state)
+        defer=self.extending and not self.braking and along>=-overrun
+        if not defer and (self.braking or along<=max(c.nav_position_tolerance,brake)):
             self.braking=True
             if not stopped:return Decision(STOP,'ASSISTING','PATH_BRAKE')
             if along<=c.nav_position_tolerance:

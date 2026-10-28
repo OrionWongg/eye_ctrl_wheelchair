@@ -10,6 +10,7 @@ from rclpy.signals import SignalHandlerOptions
 from rclpy.qos import QoSProfile,DurabilityPolicy,qos_profile_sensor_data
 from rcl_interfaces.msg import SetParametersResult
 from nav_msgs.msg import Odometry
+from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import String,Empty
 from wheelchair_interfaces.msg import (CandidateStatus,IntentEvent,InputHealth,IntentAck,TaskStatus,
     ControlIntent,ControlStatus,ExecutionStatus,ObstacleMap,DirectionEvent,NavigationIntentStatus)
@@ -25,6 +26,17 @@ class TaskManagerNode(Node):
         super().__init__('wheelchair_task_manager')
         self.allow_dynamic_map=self.declare_parameter('allow_dynamic_map',False).value
         self.directional=directional
+        self.pose_goal = None
+        if directional and self.declare_parameter('enable_rviz_goal', False).value:
+            from .pose_goal import PoseGoal
+            self.pose_goal = PoseGoal(float(self.declare_parameter('goal_timeout', 120.).value))
+            self.goal_status = self.create_publisher(String, '/wheelchair/goal_status', QOS)
+            self.goal_authority = self.create_publisher(String, '/wheelchair/goal_authority', QOS)
+            self.create_subscription(PoseStamped, '/goal_pose', self.on_goal, EVENT_QOS)
+            self.create_subscription(PoseStamped, '/move_base_simple/goal', self.on_goal, EVENT_QOS)
+            self.get_logger().info('RViz goals enabled: /goal_pose and /move_base_simple/goal (odom)')
+        elif directional:
+            self.get_logger().info('RViz goals disabled; start with enable_rviz_goal:=true to enable')
         self.navigation={};self.navigation_task=''
         source=self.declare_parameter('input_source','eye').value
         if source not in ('eye','keyboard'):raise ValueError('input_source must be eye or keyboard')
@@ -68,6 +80,24 @@ class TaskManagerNode(Node):
         self.create_timer(.05,self.tick,clock=Clock(clock_type=ClockType.STEADY_TIME))
 
     def ros_now(self):return self.get_clock().now().nanoseconds/1e9
+    def on_goal(self, m):
+        p, q = m.pose.position, m.pose.orientation
+        values = (p.x, p.y, p.z, q.x, q.y, q.z, q.w)
+        age = self.ros_now()-stamp(m)
+        if (m.header.frame_id != 'odom' or not -.05 <= age < 2.
+                or not all(math.isfinite(v) for v in values)
+                or abs(sum(v*v for v in (q.x,q.y,q.z,q.w))-1.) > .01
+                or abs(q.x) > .01 or abs(q.y) > .01 or abs(p.z) > .1):
+            reason = f'REJECTED: goal must be fresh, planar and in odom; frame={m.header.frame_id!r}, age={age:.3f}s'
+            self.goal_status.publish(String(data=reason))
+            self.get_logger().warning(reason)
+            return
+        heading = math.atan2(2*(q.w*q.z+q.x*q.y), 1-2*(q.y*q.y+q.z*q.z))
+        accepted, reason = self.pose_goal.accept((p.x,p.y,heading), time.monotonic(), self.core, bool(self.events))
+        self.goal_status.publish(String(data=('ACCEPTED: ' if accepted else 'REJECTED: ')+reason))
+        message = f'RViz goal ({p.x:.3f}, {p.y:.3f}, {heading:.3f}): {reason}'
+        if accepted:self.get_logger().debug(message)
+        else:self.get_logger().warning(message)
     def candidate(self,m):
         self.core.on_candidate(Candidate(m.source_session_id,m.sequence,stamp(m),m.ttl_ms/1000,m.candidate_id,
             m.candidate_version,m.kind,m.relative_yaw,m.stable,m.confirmable,m.context_id,m.context_version,m.protocol_version),time.monotonic(),self.ros_now())
@@ -75,6 +105,8 @@ class TaskManagerNode(Node):
         self.core.on_health(Health(m.source_session_id,m.sequence,stamp(m),m.ttl_ms/1000,m.source_valid,
             m.source_age_ms/1000,m.sample_sequence,m.protocol_version),time.monotonic(),self.ros_now())
     def event(self,m):
+        if self.pose_goal:
+            self.pose_goal.cancel('KEYBOARD_TAKEOVER')
         if self.directional:
             from .direction_manager import STOP_EVENT
             event=Event(m.source_session_id,m.event_id,stamp(m),m.ttl_ms/1000,m.kind,protocol_version=m.protocol_version)
@@ -127,6 +159,7 @@ class TaskManagerNode(Node):
         if not self.allow_dynamic_map and self.map_signature is not None and self.map_signature!=signature:self.core.stop('TASK_CONTEXT_MAP_CHANGED',time.monotonic(),FAULT)
         self.map_signature=signature
     def cancel(self,_):
+        if self.pose_goal:self.pose_goal.cancel('USER_CANCEL')
         self.events.clear();self.core.stop('USER_CANCEL',time.monotonic(),0)
     def tick(self):
         now=time.monotonic();ros_now=self.ros_now()
@@ -138,13 +171,22 @@ class TaskManagerNode(Node):
         # Same-cycle cancellations win even if a confirmation arrived first.
         for event in events if self.directional else sorted(events,key=lambda e:e.kind!=CANCEL):self.core.on_event(event,now,ros_now)
         output=self.core.tick(now,ros_now)
+        if self.pose_goal:
+            goal_output = self.pose_goal.tick(now, self.core)
+            if goal_output is not None:output = goal_output
+            self.goal_status.publish(String(data=self.pose_goal.reason))
         m=ControlIntent();m.header.stamp=self.get_clock().now().to_msg();m.header.frame_id='base_link'
         self.seq+=1;m.session_id=self.core.session;m.sequence=self.seq
         m.command=output.command;m.enabled=output.enabled;m.valid=True;m.ttl_ms=250;m.reason=output.reason
         m.task_id=output.task_id;m.task_kind=output.task_kind
         m.reference_x,m.reference_y,m.reference_yaw=output.reference;m.target_yaw=output.target_yaw
         if self.directional and self.core.active:m.task_elapsed=max(0.,now-self.core.active.started)
+        if self.pose_goal and self.pose_goal.active:
+            m.task_elapsed = max(0., now-self.pose_goal.active[2])
         self.command.publish(m)
+        if self.pose_goal:
+            self.goal_authority.publish(String(data=json.dumps(dict(
+                stamp=ros_now, task_id=output.task_id if output.enabled and output.task_kind==10 else ''))))
         if not output.enabled and not self.last_stop:self.core.metric('stop_published',now,reason=output.reason)
         self.last_stop=not output.enabled
         for ack in self.core.acks:

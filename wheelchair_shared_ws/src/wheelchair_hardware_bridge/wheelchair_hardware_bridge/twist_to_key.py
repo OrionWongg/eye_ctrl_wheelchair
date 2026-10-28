@@ -30,6 +30,7 @@ class TwistToKey(Node):
         super().__init__('twist_to_key')
         src=self.declare_parameter('source_topic','/wheelchair/sim/drive').value
         tgt=self.declare_parameter('target_topic','/whill/controller/navigation').value
+        self.continuous_input=bool(self.declare_parameter('continuous_input',False).value)
         self.declare_parameter('linear_threshold',.05)
         self.angular_threshold=float(self.declare_parameter('angular_threshold',.05).value)
         self.pub=self.create_publisher(TwistStamped,tgt,1)
@@ -38,7 +39,10 @@ class TwistToKey(Node):
 
     def on_twist(self,msg):
         out=TwistStamped();out.header.stamp=self.get_clock().now().to_msg()
-        out.header.frame_id='base_link';out.twist=to_ipad_twist(msg,self.angular_threshold)
+        out.header.frame_id='wheelchair_control_center_estimated' if self.continuous_input else 'base_link'
+        # Legacy executor embeds its old ICC translation into pure turns.
+        # Keep that compatibility conversion only for legacy action output.
+        out.twist=deepcopy(msg) if self.continuous_input else to_ipad_twist(msg,self.angular_threshold)
         self.pub.publish(out)
 
 

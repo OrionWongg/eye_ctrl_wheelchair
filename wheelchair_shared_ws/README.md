@@ -368,3 +368,15 @@ ROS_DOMAIN_ID=97 IGN_PARTITION=wheelchair_validation ROS_LOCALHOST_ONLY=1 \
 ## 办公室导航 RViz2 诊断
 
 仿真运行时在新终端执行 `~/wheelchair_shared_ws/scripts/navigation_rviz.sh`。显示办公室地图、局部代价地图、雷达、轮廓、规划/实际轨迹和停车原因。详见 [使用说明](docs/NAVIGATION_RVIZ.md)。
+
+### Continuous iPad keyboard actions
+
+While W/A/D remains held, direction commands are continuously renewed. There
+is no periodic 0.60/0.30 s release or forced stop between repeated commands.
+Key release, safety intervention, or stale input/odometry stops execution.
+Odometry remains the feedback for path progress, heading and braking checks.
+Explicit internal heading corrections retain their existing bounded pulses.
+
+The DWB model uses `forward_prediction_time` and `turn_prediction_time` to
+predict held-direction trajectories. These are planning horizons only, not
+execution time limits or a promise of an exact distance/angle.

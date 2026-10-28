@@ -13,7 +13,7 @@ from rclpy.qos import qos_profile_sensor_data
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu
 from tf2_ros import Buffer, TransformBroadcaster, TransformListener, TransformException
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped,Transform
 
 
 def rotation(q):
@@ -66,9 +66,12 @@ class OdomRelay(Node):
         super().__init__('odom_relay')
         for name, value in [('source_topic','/odin1/odometry_highfreq'),
                             ('target_topic','/wheelchair/odom'),('child_frame_id','base_link'),
-                            ('imu_source_topic','/odin1/imu'),('imu_target_topic','/wheelchair/imu')]:
+                            ('imu_source_topic','/odin1/imu'),('imu_target_topic','/wheelchair/imu'),
+                            ('source_linear_in_world',False),('publish_control_center',False)]:
             self.declare_parameter(name,value)
         p=lambda name:self.get_parameter(name).value
+        self.world_linear=bool(p('source_linear_in_world'));self.publish_center=bool(p('publish_control_center'))
+        self.center_pub=self.create_publisher(Odometry,'/wheelchair/control_center/odom',10)
         self.child=p('child_frame_id');self.tf=Buffer();self.listener=TransformListener(self.tf,self)
         self.tf_broadcaster=TransformBroadcaster(self)
         self.pub=self.create_publisher(Odometry,p('target_topic'),10)
@@ -88,6 +91,11 @@ class OdomRelay(Node):
         try:
             # Mounting extrinsics are constant even if Odin publishes them on /tf.
             t=self.tf.lookup_transform(msg.child_frame_id,self.child,Time())
+            if self.world_linear:
+                msg=deepcopy(msg);rot=rotation(quat(msg.pose.pose.orientation)).T
+                assign(msg.twist.twist.linear,rot@xyz(msg.twist.twist.linear))
+                j=np.eye(6);j[:3,:3]=rot
+                msg.twist.covariance=(j@np.array(msg.twist.covariance).reshape(6,6)@j.T).ravel().tolist()
             out=convert_odom(msg,t.transform);out.child_frame_id=self.child
             self.pub.publish(out)
             # Broadcast odom→base_link so Nav2 sees the standard REP105 tree.
@@ -100,6 +108,13 @@ class OdomRelay(Node):
             tf.transform.translation.z=out.pose.pose.position.z
             tf.transform.rotation=out.pose.pose.orientation
             self.tf_broadcaster.sendTransform(tf)
+            if self.publish_center:
+                mount=Transform();mount.rotation.w=1.;mount.translation.x=-.266192;mount.translation.y=.078385
+                center=convert_odom(out,mount);center.child_frame_id='wheelchair_control_center_estimated'
+                self.center_pub.publish(center)
+                tf=TransformStamped();tf.header=center.header;tf.child_frame_id=center.child_frame_id
+                assign(tf.transform.translation,xyz(center.pose.pose.position));tf.transform.rotation=center.pose.pose.orientation
+                self.tf_broadcaster.sendTransform(tf)
         except (TransformException,ValueError) as exc:
             self.get_logger().warning(f'Waiting for valid Odin-to-base extrinsics: {exc}',throttle_duration_sec=5.)
 

@@ -90,7 +90,7 @@ def main():
             for x in range(120,124):cells[y*200+x]=100
         grid.data=cells;spin(.4,lambda:False)
         detour=call('obstacle_detour',(0,0,0),(2.3,0,0))
-        assert detour.success and detour.reason=='SMAC_LATTICE_PLANNED'
+        assert detour.success and detour.reason=='PLANNED'
         assert spin(.5,lambda:any(m.poses for m in raw)),'no native Smac raw plan was published'
         assert not call('locked_obstacle',(0,0,0),(2.3,0,0),False).success
         for y in range(200):

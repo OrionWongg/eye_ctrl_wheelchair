@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[1]/'vendor/nav2'
 BASE='http://packages.ros.org/ros2/ubuntu/'
 ARCH=subprocess.check_output(['dpkg','--print-architecture'],text=True).strip()
 def fetch(url):return urllib.request.urlopen(url,timeout=60).read()
-def main():
+def main(requested=None):
     ROOT.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='wheelchair-nav2-') as tmp:
         temp=Path(tmp)
@@ -28,7 +28,7 @@ def main():
         for row in subprocess.check_output(['dpkg-query','-W','-f=${Package}\t${Version}\t${Status}\n'],text=True).splitlines():
             name,version,status=row.split('\t',2)
             if status=='install ok installed':installed[name]=version
-        queue=['ros-humble-dwb-core','ros-humble-nav2-costmap-2d','ros-humble-nav2-lifecycle-manager']
+        queue=list(requested or ['ros-humble-dwb-core','ros-humble-nav2-costmap-2d','ros-humble-nav2-lifecycle-manager'])
         selected={}
         while queue:
             name=queue.pop()
