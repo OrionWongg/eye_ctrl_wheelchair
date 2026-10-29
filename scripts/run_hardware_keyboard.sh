@@ -62,9 +62,9 @@ PLANNER_BACKEND=discrete
 for argument in "$@"; do
     case "$argument" in path_planner:=*) PLANNER_BACKEND="${argument#path_planner:=}";; esac
 done
-if [[ "$PLANNER_BACKEND" == smac_lattice ]]; then
+if [[ "$PLANNER_BACKEND" == smac_lattice || "$PLANNER_BACKEND" == smac_2d ]]; then
     SMAC_PREFIX="$WHEELCHAIR_WORKSPACE/vendor/smac/opt/ros/humble"
-    if [[ ! -f "$SMAC_PREFIX/lib/libnav2_smac_planner_lattice.so" ]]; then
+    if [[ ! -f "$SMAC_PREFIX/lib/libnav2_smac_planner_${PLANNER_BACKEND#smac_}.so" ]]; then
         echo "Missing Smac runtime. Run: python3 $WHEELCHAIR_WORKSPACE/scripts/install_smac_runtime.py" >&2
         exit 1
     fi

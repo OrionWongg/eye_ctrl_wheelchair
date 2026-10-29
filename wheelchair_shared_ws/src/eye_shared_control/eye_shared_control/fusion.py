@@ -20,8 +20,14 @@ def parse_sample(payload):
     for key in ('fresh', 'calibrated', 'open', 'motion_valid', 'gesture_continuity', 'long_close'):
         if type(d[key]) is not bool:
             raise ValueError(key)
-    e = d['blink_event']
-    if e is not None:
+    if 'eyes' in d:
+        if (not isinstance(d['eyes'], list) or len(d['eyes']) not in (1, 2)
+                or any(s not in ('open', 'closed', 'unknown') for s in d['eyes'])
+                or type(d.get('input_grace')) is not bool):
+            raise ValueError('eye states')
+    for e in (d['blink_event'], d.get('left_blink_event')):
+        if e is None:
+            continue
         if not isinstance(e, dict) or type(e['id']) is not int or e['id'] < 1:
             raise ValueError('event id')
         durations = e['durations']
@@ -30,13 +36,23 @@ def parse_sample(payload):
                 or not isinstance(durations, list) or len(durations) not in (1, 2)
                 or not all(number(v) and .06 <= v <= .4 for v in durations)):
             raise ValueError('event timing')
+    if 'interaction' in d:
+        result = d['interaction']
+        if (not isinstance(result, dict) or result.get('state') not in ('DISARMED', 'ACTIVE', 'PAUSED')
+                or not isinstance(result.get('reason'), str)
+                or not number(result.get('horizontal')) or abs(result['horizontal']) > 1
+                or type(result.get('event_id')) is not int or result['event_id'] < 0):
+            raise ValueError('interaction result')
+        actions = ('LEFT', 'RIGHT', 'FORWARD') if result['state'] == 'ACTIVE' else ('STOP',)
+        if result.get('action') not in actions:
+            raise ValueError('interaction action')
     return d
 
 
 class FusionInput:
-    """Turtle gesture semantics, translated into navigation events, never Twist.
+    """Per-eye packets arm on a left blink and resume when both eyes reopen.
 
-    Double blink arms, single blink resumes; gaze edges select direction while
+    Legacy packets retain double-blink arming. Gaze edges select direction while
     active. Direction persists while gaze remains past the enter threshold;
     the wheelchair planner owns the physical turn and its duration.
     """
@@ -60,6 +76,9 @@ class FusionInput:
         self.decision_details = {}
         self.signal_timeout = .4
         self.health_valid = False
+        self.filtered_result = None
+        self.filtered_disarmed = False
+        self.filtered_event_floor = 0
 
     def tracking_healthy(self, now):
         m = self.machine
@@ -77,6 +96,9 @@ class FusionInput:
         self.turn_armed = True
         if disarm:
             self.session_enabled = False
+            self.filtered_disarmed = reason != 'SOURCE_CHANGED'
+            self.filtered_event_floor = self.event_id
+            self.filtered_result = None
         if not keep_events:
             self.blinks.clear()
             self.authorization = None
@@ -121,6 +143,22 @@ class FusionInput:
             return
         if self.active and m.ack in ('REJECTED', 'TIMEOUT'):
             self.pause('NAVIGATION_'+m.ack, now)
+            return
+        if self.filtered_result is not None:
+            # EYETLE has already run the shared interaction reducer. Do not
+            # infer blinks or apply a second dwell/hysteresis/post-blink delay.
+            result = self.filtered_result
+            if self.authorization and self.authorization[1] == 'START_BUTTON':
+                self.filtered_disarmed = False
+                self.authorization = None
+            if result['state'] != 'ACTIVE' or self.filtered_disarmed:
+                return
+            direction = {'LEFT': -1, 'FORWARD': 0, 'RIGHT': 1}[result['action']]
+            if not self.active or (direction != self.turn and m.pending is None):
+                self.session_enabled = self.active = True
+                self.turn = direction
+                self.emit(now, direction)
+            self.reason = result['reason']
             return
         if self.authorization and not self.active:
             self.session_enabled = self.active = True
@@ -168,6 +206,8 @@ class FusionInput:
         if d['sequence'] <= self.sequence:
             return False, 0.
         self.sequence = d['sequence']
+        if 'interaction' not in d:
+            self.filtered_result = None
         self.tick(now)
         age = wall-d['stamp_ns']/1e9
         if (not clock_valid or not -.05 <= age < m.cfg.source_timeout
@@ -176,13 +216,22 @@ class FusionInput:
                        barrier=now-max(0., age) if clock_valid else now)
             return True, age
         stamp = now-max(0., age)
-        if not d['gesture_continuity']:
+        if 'interaction' in d:
+            self.receive_interaction(d['interaction'], now, stamp, max(0., age))
+            return True, age
+        binocular = 'eyes' in d
+        if not binocular and not d['gesture_continuity']:
             self.pause('GESTURE_TRACKING_LOST', now, barrier=stamp)
         if d['long_close']:
             self.pause('LONG_EYE_CLOSE', now)
             return True, age
-        ready = d['motion_valid'] and d['open'] and d['gesture_continuity']
-        self.horizontal = d['horizontal']
+        both_open = binocular and d['eyes'] == ['open', 'open']
+        grace = (binocular and d['input_grace'] and self.active
+                 and 'closed' not in d['eyes'])
+        ready = (d['motion_valid'] and (both_open or grace) if binocular else
+                 d['motion_valid'] and d['open'] and d['gesture_continuity'])
+        if not grace:
+            self.horizontal = d['horizontal']
         self.horizontal_at = stamp
         if not ready:
             self.pause('INVALID_INPUT', now, keep_events=True)
@@ -194,12 +243,14 @@ class FusionInput:
         self.health_valid = ready or (not d['open'] and d['gesture_continuity'])
         if ready:
             m.fault_latched = False
-        e = d['blink_event']
+        # New detector packets carry per-eye observations. Legacy publishers
+        # retain their original paired-blink protocol.
+        e = d.get('left_blink_event') if binocular else d['blink_event']
         if e is not None and e['id'] > self.event_id:
             self.event_id = e['id']
             start = stamp-(d['source_t']-e['start'])
             end = stamp-(d['source_t']-e['end'])
-            if not d['gesture_continuity']:
+            if not binocular and not d['gesture_continuity']:
                 self.event_decision = 'REJECT_CONTINUITY'
             elif start < self.barrier:
                 self.event_decision = 'REJECT_BEFORE_STOP'
@@ -211,13 +262,35 @@ class FusionInput:
                 self.event_decision = 'ACCEPTED'
                 self.gaze_after = now + m.cfg.post_blink_gaze_delay
                 self.blinks.append(end)
-                if not self.session_enabled and len(self.blinks) >= 2:
-                    self.authorization = (end, 'DOUBLE_BLINK_CONFIRMED')
+                if not self.session_enabled and (binocular or len(self.blinks) >= 2):
+                    self.authorization = (end, 'LEFT_BLINK_CONFIRMED' if binocular else 'DOUBLE_BLINK_CONFIRMED')
                 elif self.session_enabled and not self.active:
                     self.authorization = (end, 'SINGLE_BLINK_RESUME_CONFIRMED')
             self.decision_details = dict(event_start=start, event_end=end,
                 event_age_ms=(now-end)*1000., barrier=self.barrier,
                 barrier_reason=self.barrier_reason, sample_age_ms=age*1000.,
                 motion_ready=ready, gesture_continuity=d['gesture_continuity'])
+        if binocular and self.session_enabled and not self.active and ready and both_open:
+            self.authorization = (now, 'BOTH_EYES_OPEN')
         self.tick(now)
         return True, age
+
+    def receive_interaction(self, result, now, stamp, age):
+        """Translate the detector's shared result; only transport gates live here."""
+        m = self.machine
+        self.filtered_result = result
+        self.event_id = result['event_id']
+        if self.filtered_disarmed and self.event_id > self.filtered_event_floor:
+            self.filtered_disarmed = False
+        ready = result['state'] == 'ACTIVE' and not self.filtered_disarmed
+        if not ready:
+            self.pause(result['reason'], now, keep_events=True)
+            self.session_enabled = result['state'] != 'DISARMED' and not self.filtered_disarmed
+        self.horizontal = result['horizontal']
+        self.horizontal_at = stamp
+        m.source_at, m.source_age, m.source_valid = now, age, ready
+        self.health_valid = ready
+        if ready:
+            m.fault_latched = False
+        self.event_decision = 'SHARED_INTERACTION'
+        self.tick(now)

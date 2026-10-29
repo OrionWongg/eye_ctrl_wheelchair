@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [[ ${1:-} == --help ]]; then
-    echo "Usage: $0 [path_planner:=smac_lattice|discrete] [ros2-launch-args]"
+    echo "Usage: $0 [path_planner:=smac_2d|smac_lattice|discrete] [ros2-launch-args]"
     echo "Start sensors first. Arm in the iPad window, then use RViz 2D Goal Pose."
     echo "Closing RViz stops the hardware stack."
     exit 0

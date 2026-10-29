@@ -16,6 +16,13 @@
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "wheelchair_interfaces/msg/input_health.hpp"
 #include "wheelchair_interfaces/srv/compute_discrete_path.hpp"
+#ifdef WHEELCHAIR_SMAC_2D
+static constexpr auto plugin_type="nav2_smac_planner/SmacPlanner2D";
+static constexpr auto interface_name="smac_2d_interface";
+#else
+static constexpr auto plugin_type="nav2_smac_planner/SmacPlannerLattice";
+static constexpr auto interface_name="smac_lattice_interface";
+#endif
 using Pose=geometry_msgs::msg::Pose2D;
 using Clock=std::chrono::steady_clock;
 static double wrap(double a){return std::atan2(std::sin(a),std::cos(a));}
@@ -51,7 +58,7 @@ class SnapshotCostmap:public nav2_costmap_2d::Costmap2DROS {
 
 class SmacInterface:public rclcpp::Node {
  public:
-  explicit SmacInterface(nav2_util::LifecycleNode::SharedPtr context,pluginlib::ClassLoader<nav2_core::GlobalPlanner>&libraries):Node("smac_lattice_interface"),
+  explicit SmacInterface(nav2_util::LifecycleNode::SharedPtr context,pluginlib::ClassLoader<nav2_core::GlobalPlanner>&libraries):Node(interface_name),
       loader_(libraries),context_(context) {
     auto parameter=[&](const std::string &key,double value){return declare_parameter<double>(key,value);};
     auto points=declare_parameter<std::vector<double>>("footprint",{-.45,-.30,.55,-.30,.55,.30,-.45,.30});
@@ -74,8 +81,8 @@ class SmacInterface:public rclcpp::Node {
     map_=snapshot_->getCostmap();timeout_=parameter("search_time_limit",.35);map_timeout_=parameter("costmap_timeout",.5);
     if(!std::isfinite(timeout_)||timeout_<=0||!std::isfinite(map_timeout_)||map_timeout_<=0)throw std::invalid_argument("Invalid timeout");
     session_=std::to_string(getpid())+"-"+std::to_string(Clock::now().time_since_epoch().count());
-    loader_.loadLibraryForClass("nav2_smac_planner/SmacPlannerLattice");
-    planner_=loader_.createSharedInstance("nav2_smac_planner/SmacPlannerLattice");
+    loader_.loadLibraryForClass(plugin_type);
+    planner_=loader_.createSharedInstance(plugin_type);
     raw_pub_=create_publisher<nav_msgs::msg::Path>("/wheelchair/smac/raw_plan",1);
     grid_sub_=create_subscription<nav_msgs::msg::OccupancyGrid>("/wheelchair/local_costmap/costmap",rclcpp::QoS(1).transient_local(),
       [this](nav_msgs::msg::OccupancyGrid::SharedPtr m){grid(*m);});
@@ -92,7 +99,7 @@ class SmacInterface:public rclcpp::Node {
         try{compute(*r,*out,begin);}catch(const std::exception&e){out->success=false;out->reason="SMAC_EXCEPTION";RCLCPP_ERROR(get_logger(),"%s",e.what());}
         out->compute_ms=std::chrono::duration<double,std::milli>(Clock::now()-begin).count();
       });
-    RCLCPP_INFO(get_logger(),"Loaded real Humble nav2_smac_planner/SmacPlannerLattice; no chassis publisher");
+    RCLCPP_INFO(get_logger(),"Loaded real Humble %s; no chassis publisher", plugin_type);
   }
   ~SmacInterface(){if(configured_){planner_->deactivate();planner_->cleanup();}planner_.reset();}
  private:
@@ -161,6 +168,18 @@ class SmacInterface:public rclcpp::Node {
   geometry_msgs::msg::PoseStamped stamped(const Pose&p){geometry_msgs::msg::PoseStamped m;m.header.frame_id="odom";m.header.stamp=now();
     m.pose.position.x=p.x;m.pose.position.y=p.y;m.pose.orientation.z=std::sin(p.theta/2);m.pose.orientation.w=std::cos(p.theta/2);return m;}
   bool lattice(const Pose&start,const Pose&goal,std::vector<Pose>&out){
+#ifdef WHEELCHAIR_SMAC_2D
+    auto raw=planner_->createPlan(stamped(start),stamped(goal));raw_pub_->publish(raw);
+    if(raw.poses.empty()||expired())return false;
+    out={start};
+    for(const auto &m:raw.poses){
+      auto p=pose(m.pose.position.x,m.pose.position.y,heading(m.pose.orientation));
+      if(!std::isfinite(p.x)||!std::isfinite(p.y)||!std::isfinite(p.theta))return false;
+      out.push_back(p);
+    }
+    out.push_back(goal);
+    return true;
+#else
     // Exact direct routes need no graph search. This also preserves narrow
     // straight passages whose geometry is finer than lattice quantization.
     if(connect(start,goal,out)||connect(start,goal,out,-1))return true;
@@ -219,6 +238,7 @@ class SmacInterface:public rclcpp::Node {
       if(!found)return false;
     }
     return false;
+#endif
   }
   void compute(const wheelchair_interfaces::srv::ComputeDiscretePath::Request&r,
                wheelchair_interfaces::srv::ComputeDiscretePath::Response&out,Clock::time_point begin){

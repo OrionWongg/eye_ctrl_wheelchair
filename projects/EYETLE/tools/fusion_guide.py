@@ -25,6 +25,10 @@ class GuideWindow:
             from ipad_panel import IpadPanel
             self.ipad_panel=IpadPanel(self.root)
         bar=tk.Frame(self.root,bg='#101827');bar.pack(fill='x',padx=24,pady=8)
+        self.start_button=tk.Button(bar,text='启动',font=('Noto Sans CJK SC',13),
+            command=lambda:self.request('start'),bg='#24764b',fg='white',
+            relief='flat',padx=18,pady=6,state='disabled')
+        self.start_button.pack(side='left',padx=8)
         actions=[('重新确认正中','center'),('退出','exit')] if ipad_controls or center_only else [('重新确认正中','center'),('重新标定左右','full'),('重试保存','save'),('退出','exit')]
         for text,action in actions:
             tk.Button(bar,text=text,font=('Noto Sans CJK SC',13),command=lambda a=action:self.request(a),
@@ -58,6 +62,8 @@ class GuideWindow:
     def render(self,phase,progress,message,controller,valid,h,eyes,step=0,blink_count=0,target='turtle',blockers=None):
         c=self.canvas;c.delete('all');w=self.width;ch=self.height-self.bottom_height
         ready=phase=='ready'
+        self.start_button.configure(state='normal' if ready and valid and not blockers
+            and controller in ('DISARMED','PAUSED') and target=='wheelchair' else 'disabled')
         if ready!=self.was_ready:
             self.root.attributes('-topmost',not ready);self.was_ready=ready
         def text(x,y,value,size=22,color='#eaf0fa',bold=False):
@@ -69,12 +75,17 @@ class GuideWindow:
                    '已暂停 · 睁眼后短眨眼一次恢复' if controller=='PAUSED' else
                    '控制中 · 长闭眼可暂停' if controller=='ACTIVE' else '检测已就绪 · 当前为预览')
             if controller=='DISARMED' and blink_count==1:title='已识别一次眨眼 · 请再眨眼一次'
-            if target=='wheelchair':title=title.replace('小乌龟','轮椅')
+            if target in ('wheelchair','offline'):
+                title={'DISARMED':'左眼眨一次，启动轮椅',
+                       'PAUSED':'已暂停 · 双眼睁开自动恢复',
+                       'ACTIVE':'控制中 · 短暂眨眼保持动作'}.get(controller,title)
+                if target=='offline':
+                    title=title.replace('启动轮椅','开始离线测试').replace('闭眼立即暂停','短暂眨眼保持动作')
             if not valid:title='暂时未看清眼睛 · 保持睁眼和头部稳定'
             if blockers:
                 title='控制器未就绪 · 眨眼暂不驱动轮椅'
         else:title=titles.get(phase,'请跟随引导')
-        text(w/2,42,'眼动控制  /  自动引导',18,'#8fa7c8')
+        text(w/2,42,'眼动控制  /  离线测试' if target=='offline' else '眼动控制  /  自动引导',18,'#8fa7c8')
         text(w/2,108,title,30,'#ffffff',True)
         if not ready:text(w/2,162,'头部保持不动，只移动眼睛；不用按键',19,'#bac9df')
         x={'left':w*.14,'right':w*.86}.get(phase,w/2);y=self.height/2
@@ -96,7 +107,8 @@ class GuideWindow:
             countdown=f'  ·  继续保持约 {(1-progress)*1.5:.1f} 秒' if 0<progress<1 else '  ·  等待画面稳定' if progress==1 else ''
             text(w/2,ch-92,f'稳定采集 {round(progress*100)}%'+countdown,18,'#bac9df')
         else:text(w/2,ch-145,
-            '运行中看左右直接转向；回中后可再触发，暂停后眨眼恢复' if target=='wheelchair' else
+            '仅显示眼动状态与方向，不输出运动指令' if target=='offline' else
+            '方向稳定后切换；短暂眨眼保持动作，双眼睁开恢复' if target=='wheelchair' else
             '看左／右选择方向；输入异常时小乌龟保持停止',18,'#bac9df')
         if ready and blockers:
             descriptions={

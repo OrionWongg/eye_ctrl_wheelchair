@@ -84,7 +84,7 @@ def generate_launch_description():
         DeclareLaunchArgument('interaction_mode', default_value='directional_intent',
                               choices=['gaze_joystick', 'intent_confirm', 'directional_intent']),
         DeclareLaunchArgument('path_planner', default_value='discrete',
-                              choices=['discrete', 'smac_lattice']),
+                              choices=['discrete', 'smac_lattice', 'smac_2d']),
         # A/B knobs, applied identically to whichever backend is selected.
         DeclareLaunchArgument('state_cell', default_value='0.10',
                               description='Discrete-search position deduplication cell (m)'),
@@ -192,6 +192,13 @@ def generate_launch_description():
                           'Lattice.lattice_filepath':
                           nav_share + '/config/wheelchair_lattice.json'}]),
 
+        Node(package='wheelchair_nav2', executable='smac_2d_interface',
+             condition=IfCondition(PythonExpression(["'", interaction,
+                 "' == 'directional_intent' and '", path_planner, "' == 'smac_2d'"])),
+             parameters=[config, timing_cfg, nav2_config, search_params,
+                         {'use_sim_time': False, 'Lattice.allow_unknown': False,
+                          'Lattice.tolerance': 0.0}]),
+
         # Native Nav2 controller; the lower safety gate owns FollowPath actions.
         Node(package='nav2_controller', executable='controller_server',
              namespace='wheelchair/dwb_preview', name='controller_server',
@@ -213,11 +220,11 @@ def generate_launch_description():
              remappings=[
                  ('/wheelchair/compute_discrete_path',
                   PythonExpression(["'/wheelchair/smac/compute_discrete_path' if '",
-                                    path_planner, "' == 'smac_lattice' else "
+                                    path_planner, "' in ('smac_lattice', 'smac_2d') else "
                                     "'/wheelchair/compute_discrete_path'"])),
                  ('/wheelchair/path_planner_health',
                   PythonExpression(["'/wheelchair/smac/path_planner_health' if '",
-                                    path_planner, "' == 'smac_lattice' else "
+                                    path_planner, "' in ('smac_lattice', 'smac_2d') else "
                                     "'/wheelchair/path_planner_health'"])),
              ],
              parameters=[config, ctrl_share + '/config/directional.yaml', timing_cfg,
@@ -231,8 +238,8 @@ def generate_launch_description():
                               "'continuous' if '", LaunchConfiguration('input_source'),
                               "' == 'keyboard' else 'fixed'"]),
                           'path_planner_backend': PythonExpression([
-                              "'smac_lattice' if '", path_planner,
-                              "' == 'smac_lattice' else 'nav2_dwb'"]),
+                              "'", path_planner, "' if '", path_planner,
+                              "' in ('smac_lattice', 'smac_2d') else 'nav2_dwb'"]),
                           'navigation_backend': PythonExpression([
                               "'nav2' if '", interaction,
                               "' == 'directional_intent' else 'none'"])}],

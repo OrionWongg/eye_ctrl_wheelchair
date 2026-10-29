@@ -1,4 +1,4 @@
-"""Downstream arbitration: existing intent/path -> full-speed clear-space or native DWB.
+"""Downstream arbitration: existing intent/path -> native Nav2 DWB.
 No eye/keyboard protocol or planner algorithm lives here.
 """
 import math
@@ -10,7 +10,6 @@ from nav2_msgs.action import FollowPath
 from rclpy.action import ActionClient
 from .planner import Decision,Predictor,State
 from .protocol import STOP,FORWARD,LEFT,RIGHT
-from .geometry import wrap,transform,clearance
 
 CENTER=(-.266192,.078385)
 
@@ -57,10 +56,6 @@ class ContinuousFollower:
         self.parts=[SimpleNamespace(end=self.last_goal)];self.index=0
         self.mode='DIRECT';self.handle=None;self.pending=False;self.generation=0
         self.result=None;self.cancel_future=None
-        self.legacy_turn=None
-        if all(math.dist(p[:2],self.poses[0][:2])<.01 for p in self.poses):
-            from .path_tracking import PathFollower
-            self.legacy_turn=PathFollower(owner,poses,task_id)
 
     def cancel(self):
         self.generation+=1;self.adapter.command=None
@@ -106,29 +101,8 @@ class ContinuousFollower:
         future.add_done_callback(accepted)
 
     def tick(self,state,obstacles,boundary,now,stopped):
-        goal=self.last_goal
         if self.result=='DONE':self.done=True;return Decision(STOP,'PASS','PATH_COMPLETED')
         if self.result=='FAILED':self.blocked=True;return Decision(STOP,'BLOCKED','DWB_PATH_FAILED')
-        scope=self.owner.task_scope
-        # Cruise can pass through unchanged only when its path and heading are
-        # straight ahead, clearance is open, and a full-speed stop fits.
-        near=clearance(transform(self.cfg.footprint,state.pose),obstacles,boundary,0.)
-        if self.legacy_turn is not None and self.mode=='DIRECT' and near>self.cfg.context_assist_leave:
-            decision=self.legacy_turn.tick(state,obstacles,boundary,now,stopped)
-            self.done=self.legacy_turn.done;self.blocked=self.legacy_turn.blocked
-            return decision
-        h=state.yaw;dx=goal[0]-state.x;dy=goal[1]-state.y
-        aligned=abs(wrap(math.atan2(dy,dx)-h))<.06 and abs(wrap(goal[2]-h))<.06
-        nearest=min(range(len(self.poses)),key=lambda i:math.dist(state.pose[:2],self.poses[i][:2]))
-        straight=all(abs(wrap(p[2]-h))<.06 and abs(-(p[0]-state.x)*math.sin(h)+(p[1]-state.y)*math.cos(h))<.10 for p in self.poses[nearest:])
-        direct=(getattr(scope,'phase','')=='CRUISE' and self.open_ended and aligned and straight
-                and near>self.cfg.context_assist_leave and math.hypot(dx,dy)>.6
-                and (math.hypot(dx,dy)>self.replan_distance(state) or self.extending))
-        if direct:
-            if self.mode=='DWB':self.cancel()
-            if self.cancel_future is not None and not self.cancel_future.done():return Decision(STOP,'ASSISTING','DWB_CANCEL_WAIT')
-            decision=self.adapter.checked(self.owner,state,obstacles,boundary,(.548,0.),'NAV_OPEN_FULL_FORWARD')
-            if decision.action!=STOP:return decision
         if self.mode!='DWB':self.mode='DWB';self.adapter.command=None
         self.send()
         if self.adapter.command is None:

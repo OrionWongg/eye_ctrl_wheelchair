@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import time
@@ -17,12 +18,15 @@ from fusion_calibration import GuidedCalibration
 from fusion_control import FusionControl,combine_eye_state
 from purest_backend import PuReST
 from camera_paths import fusion_camera_defaults
+from eye_interaction import EyeInteraction
 
 ROOT=Path(__file__).resolve().parents[1]
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--eyes',choices=['left','both'],default='both')
+    p.add_argument('--input-loss-window',type=float,default=.2,
+                   help='Detection loss window and offline action filter in seconds (default: 0.2)')
     defaults = fusion_camera_defaults()
     for side,rotation in [('left',180),('right',0)]:
         device=defaults.get(side, f'/dev/v4l/by-path/missing-{side}-camera')
@@ -41,6 +45,10 @@ def main():
     p.add_argument('--report')
     p.add_argument('--teyed-reference',action='store_true',help='Log TEyeD as a comparison, not a motion vote')
     args=p.parse_args()
+    # One reducer for offline display and live ROS output.
+    interaction = EyeInteraction(args.input_loss_window)
+    if not math.isfinite(args.input_loss_window) or args.input_loss_window < 0:
+        p.error('--input-loss-window must be finite and nonnegative')
     if args.ipad_controls and not args.publish_ros:p.error('--ipad-controls requires --publish-ros')
     if not args.three_point and (args.saved_calibration_only or args.recalibrate):
         p.error('--saved-calibration-only/--recalibrate require --three-point')
@@ -89,6 +97,10 @@ def main():
                 source_t=source_t,horizontal=float(h),motion_valid=bool(valid),fresh=bool(fresh),
                 calibrated=bool(calibrated),open=bool(open_eyes),gesture_continuity=bool(gesture_continuity),
                 long_close=bool(long_close),blink_event=event)
+            if control is not None:
+                data.update(eyes=list(control.eye_states), input_grace=bool(control.input_grace),
+                            left_blink_event=control.left_event,
+                            interaction=interaction.snapshot())
             pub.publish(String(data=json.dumps(data,allow_nan=False)))
             write_trace(dict(type='sample',wall_time=time.time(),received_monotonic=time.monotonic(),data=data))
     n=valid_count=closed_count=0;times=[];last_status=None;last_log=last_draw=0.
@@ -116,6 +128,7 @@ def main():
             from std_msgs.msg import String
             rclpy.init();node=rclpy.create_node('fusion_eye_tracker')
             pub=node.create_publisher(String,'/eye_tracking/fusion_samples',1)
+            start_pub=node.create_publisher(String,'/eye_control/start',1)
             node.create_subscription(String,'/eye_control/feedback',receive,1)
             if ui and ui.ipad_panel:
                 ui_commands=node.create_publisher(String,'/whill/controller/ui',1)
@@ -138,7 +151,7 @@ def main():
         print('FUSION_CALIBRATION '+json.dumps(calibration_info),flush=True)
         write_trace(dict(type='calibration',wall_time=time.time(),data=calibration_info))
         if args.recalibrate:cal.restart(full=True)
-        control=FusionControl(cal)
+        control=FusionControl(cal,args.input_loss_window)
         print('FUSION: RITnet + PuReST; '+('guided center/left/right; saved='+str(cal.loaded)
               if args.three_point else f'center-only start; span={cal.span}'),flush=True)
         seq=[0]*count;last_frame=time.monotonic()
@@ -147,14 +160,20 @@ def main():
             if ui:
                 action=ui.poll()
                 if action=='exit':break
+                if action=='start' and node:
+                    if control.motion_valid and not control.input_grace and control.eye_states==['open','open']:
+                        interaction.start()
+                    start_pub.publish(String(data=json.dumps(dict(session=source_session,
+                        stamp_ns=node.get_clock().now().nanoseconds))))
                 if action in ('center','full'):
                     publish();control.reset_gesture();cal.restart(full=action=='full')
+                    interaction.reset()
                 if action=='save':cal.save_pending()
             if any(c.error for c in cameras):raise RuntimeError('Camera disconnected')
             incoming=[c.latest for c in cameras];now=time.monotonic()
             if any(s is None or s[0]==q for s,q in zip(incoming,seq)):
                 if now-last_frame>.25:publish()
-                if now-last_frame>2.:raise RuntimeError('Camera frame timeout')
+                if args.publish_ros and now-last_frame>2.:raise RuntimeError('Camera frame timeout')
                 time.sleep(.002);continue
             seq=[s[0] for s in incoming];last_frame=now;stamps=[s[1] for s in incoming];stamp=min(stamps)
             frames=[orient_frame(s[2],r) for s,r in zip(incoming,rotations)]
@@ -183,19 +202,23 @@ def main():
                     features[i,1]=pd['center'][0]/width;quality[i,1]=pd['confidence']
                 states.append(combine_eye_state(r,accepted))
             ref=[reference.infer(f).tolist() for f in frames] if reference else None
-            fresh=max(stamps)-stamp<.08 and time.monotonic()-stamp<.25
+            fresh=(max(stamps)-stamp<.08 and time.monotonic()-stamp<.25) if args.publish_ros else True
             if args.no_display:
                 # Unsupervised hardware diagnostics must not learn a new center.
                 h,closed,valid,reason=0.,False,False,'DIAGNOSTIC_ONLY'
             else:
-                h,closed,valid,reason=control.update(features,quality,states,stamp,fresh,gesture_states=rstates)
+                h,closed,valid,reason=control.update(features,quality,states,stamp,True,gesture_states=rstates)
                 valid=control.motion_valid;closed=all(s=='closed' for s in rstates)
                 if not valid and reason=='READY':reason='GESTURE_TRANSITION'
+            state=interaction.update(control.eye_states,control.motion_valid,
+                control.input_grace,control.left_event,h,stamp)
             publish(h,closed,valid,stamp,fresh,cal.ready,control.open_eyes,
                     control.gestures.continuity,control.long_close,control.outgoing_event)
             n+=1;valid_count+=int(valid);closed_count+=int(fresh and closed)
             times.append((time.perf_counter()-start)*1000)
-            state=feedback['state'] if time.monotonic()-feedback['at']<.5 else 'NO_CONTROLLER'
+            if not args.publish_ros:
+                feedback.update(state=state,reason=interaction.reason,target='offline',
+                                blockers=[],blink_count=0,event_decision='LOCAL')
             status=(tuple(states),tuple(rstates),valid,closed,reason,state,cal.phase,feedback['blink_count'],control.gestures.status,
                     control.event['id'] if control.event else None,feedback['event_decision'])
             record=dict(t=stamp,eyes=states,ritnet_states=rstates,
@@ -205,6 +228,9 @@ def main():
                     blink_event=control.event,blink_phase=control.gestures.status,gesture_continuity=control.gestures.continuity,
                     long_close=control.long_close,
                     valid=valid,closed=closed,horizontal=h,reason=reason,controller=state,
+                    filtered_horizontal=interaction.horizontal,
+                    filtered_action=interaction.action,
+                    interaction=interaction.snapshot(),
                     controller_reason=feedback['reason'],controller_blockers=feedback['blockers'],controller_blinks=feedback['blink_count'],
                     controller_event_decision=feedback['event_decision'],
                     eye_directions=control.eye_directions,
@@ -217,7 +243,10 @@ def main():
                 print('FUSION_INPUT '+json.dumps(record,allow_nan=False),flush=True)
                 last_status=status;last_log=now
             if ui and now-last_draw>=.1:
-                ui.render(cal.phase,cal.progress,cal.message,state,valid,h,states,cal.index,feedback['blink_count'],feedback['target'],feedback['blockers']);last_draw=now
+                ui.render(cal.phase,cal.progress,cal.message,state,
+                    interaction.state=='ACTIVE',
+                    interaction.horizontal,states,cal.index,
+                    feedback['blink_count'],feedback['target'],feedback['blockers']);last_draw=now
             if args.max_frames and n>=args.max_frames:break
     except KeyboardInterrupt:pass
     finally:

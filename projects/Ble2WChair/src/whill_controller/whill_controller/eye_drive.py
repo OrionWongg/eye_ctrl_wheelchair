@@ -11,7 +11,7 @@ class DirectFusion(FusionInput):
 
 
 class EyeDrive:
-    """Keep existing blink, freshness, replay and one-second turn semantics."""
+    """Map the shared filtered interaction to keys; retain transport guards."""
 
     def __init__(self):
         self.machine = ConfirmMachine(ConfirmConfig(enter=.55, leave=.25))

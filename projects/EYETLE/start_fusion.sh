@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-set +u
-source "${ROOT}/eye_ros_env.bash"
-set -u
+if [[ " $* " == *" --publish-ros "* ]]; then
+    set +u
+    source "${ROOT}/eye_ros_env.bash"
+    set -u
+fi
 # Default: look at the center once per start; no profile file is needed.
 # --three-point restores the original saved simulation profile, read-only.
 if [[ " $* " == *" --three-point "* ]]; then

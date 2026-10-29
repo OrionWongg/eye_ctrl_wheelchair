@@ -258,6 +258,9 @@ class WhillControllerNode(Node):
             self.eye_feedback_timer = self.create_timer(.1, self.publish_eye_feedback)
             self.eye_sub = self.create_subscription(
                 String, '/eye_tracking/fusion_samples', self.on_eye_sample, 1)
+            self.last_eye_start_stamp = 0
+            self.eye_start_sub = self.create_subscription(
+                String, '/eye_control/start', self.on_eye_start, 1)
         self.status_timer = self.create_timer(1.0, self.publish_status)
         self.motion_timer = self.create_timer(0.05, self.update_motion)
 
@@ -577,6 +580,26 @@ class WhillControllerNode(Node):
                 self.toggle_keyboard_arm()
         except (ValueError, TypeError, KeyError):
             self.get_logger().warning('Ignored malformed combined UI command')
+
+    def on_eye_start(self, message):
+        now = time.monotonic()
+        f, m = self.eye_drive.fusion, self.eye_drive.machine
+        try:
+            command = json.loads(message.data)
+            stamp = command['stamp_ns']
+            if (type(stamp) is not int or stamp <= self.last_eye_start_stamp
+                    or not 0 <= time.time()-stamp/1e9 < .25
+                    or command['session'] != f.session):
+                return
+        except (ValueError, KeyError, TypeError, OverflowError):
+            return
+        self.last_eye_start_stamp = stamp
+        if (self.eye_blockers() or not m.healthy(now) or not f.tracking_healthy(now)
+                or not m.context_fresh(now) or not m.can_accept or f.active):
+            self.get_logger().warning('启动未执行：请保持睁眼，并等待控制器就绪。')
+            return
+        f.authorization = (now, 'START_BUTTON')
+        self.update_eye_drive()
 
     def eye_blockers(self):
         """Expose each unmet condition instead of a generic not-ready state."""

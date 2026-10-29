@@ -44,6 +44,8 @@ class ConfirmTransport:
             cfg.leave = float(node.declare_parameter('fusion_leave', .25).value)
             node.machine = self.machine = ConfirmMachine(cfg)
             self.fusion_input = FusionInput(self.machine)
+            self.last_start_stamp = 0
+            node.create_subscription(String, '/eye_control/start', self.start_button, 1)
             node.create_subscription(Empty, '/wheelchair/emergency_stop',
                 lambda msg: self.fusion_input.pause('EMERGENCY_STOP', time.monotonic(), disarm=True), 10)
         qos = QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE,
@@ -69,6 +71,39 @@ class ConfirmTransport:
             '/wheelchair/navigation_status' if directional else '/wheelchair/task_status', self.status, qos)
         node.create_subscription(IntentAck, '/wheelchair/intent_ack', self.ack, events)
         node.timer = node.create_timer(.05, self.publish, clock=Clock(clock_type=ClockType.STEADY_TIME))
+
+    def start_button(self, msg):
+        now = time.monotonic()
+        try:
+            command = json.loads(msg.data)
+            stamp = command['stamp_ns']
+            if (type(stamp) is not int or stamp <= self.last_start_stamp
+                    or not 0 <= time.time()-stamp/1e9 < .25
+                    or command['session'] != self.fusion_input.session):
+                return
+        except (ValueError, KeyError, TypeError, OverflowError):
+            return
+        self.last_start_stamp = stamp
+        f, m = self.fusion_input, self.machine
+        blockers = self.start_blockers(now)
+        if blockers or f.active:
+            self.node.get_logger().warning('启动未执行：'+json.dumps(dict(
+                blockers=blockers, active=f.active, navigation=m.task,
+                source_age_ms=None if m.source_at is None else
+                (now-m.source_at+m.source_age)*1000.), ensure_ascii=False))
+            return
+        f.authorization = (now, 'START_BUTTON')
+        f.tick(now)
+        self.publish()
+
+    def start_blockers(self, now):
+        m = self.machine
+        return [reason for failed, reason in (
+            (not self.clock_valid, 'ROS_CLOCK_UNAVAILABLE'),
+            (not m.healthy(now), 'EYE_INPUT_INVALID_OR_STALE'),
+            (not self.fusion_input.tracking_healthy(now), 'EYE_TRACKING_NOT_READY'),
+            (not m.context_fresh(now), 'NAVIGATION_STATUS_STALE'),
+            (not m.can_accept, 'NAVIGATION_NOT_READY:'+str(m.task.get('reason', '')))) if failed]
 
     def fusion(self, msg):
         now = time.monotonic()
@@ -225,7 +260,7 @@ class ConfirmTransport:
                     f' {abs(math.degrees(c.relative_yaw)):.1f}°' if c else '等待稳定候选')
         if self.directional:
             msg.hint=('启动/继续直行' if c and c.kind==1 else
-                      ('左侧方向意图' if c.relative_yaw>0 else '右侧方向意图') if c else ('双眨眼启动；看左右转向，暂停后单眨眼恢复' if self.sample_mode == 'fusion' else '看方向，双眨眼确认'))
+                      ('左侧方向意图' if c.relative_yaw>0 else '右侧方向意图') if c else ('左眼眨一次启动；看左右转向，双眼睁开恢复' if self.sample_mode == 'fusion' else '看方向，双眨眼确认'))
         self.candidate_pub.publish(msg)
         if c:
             self.last_candidate = c
@@ -261,6 +296,7 @@ class ConfirmTransport:
         feedback = String()
         feedback.data = json.dumps(dict(state=self.fusion_input.state if self.sample_mode == 'fusion' else 'WHEELCHAIR',
             target='wheelchair',
+            blockers=self.start_blockers(now) if self.sample_mode == 'fusion' else [],
             event_decision=self.fusion_input.event_decision if self.sample_mode == 'fusion' else 'NONE',
             blink_count=len(self.fusion_input.blinks) if self.sample_mode == 'fusion' and not self.fusion_input.session_enabled else 0,
             interaction_mode='directional_intent' if self.directional else 'intent_confirm',

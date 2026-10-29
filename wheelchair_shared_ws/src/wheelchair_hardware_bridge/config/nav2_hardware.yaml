@@ -23,8 +23,8 @@
     track_unknown_space: true
     always_send_full_costmap: true
     transform_tolerance: 0.15
-    # footprint: '[[-0.42,-0.275],[0.53,-0.275],[0.53,0.275],[-0.42,0.275]]'
-    footprint: '[[-0.10,-0.10],[0.10,-0.10],[0.10,0.10],[-0.10,0.10]]'
+    footprint: '[[-0.42,-0.275],[0.53,-0.275],[0.53,0.275],[-0.42,0.275]]'
+    # footprint: '[[-0.10,-0.10],[0.10,-0.10],[0.10,0.10],[-0.10,0.10]]'
     footprint_padding: 0.0
     plugins:
     - static_layer
